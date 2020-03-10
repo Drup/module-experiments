@@ -1,0 +1,71 @@
+\begin{align*}
+  \Ostrengthen{l}{\ip}{\ip'.\iX}
+  &\to \Ostrengthen{l}{\ip}{\E(\ip'.\iX)}\\
+  \Ostrengthen{l}{\ip}{\Ssig{\iS}}
+  &\to \Ssig{\Ostrengthen{l}{\ip}{\iS}}\\
+  \Ostrengthen{l}{\ip}{(\Swith{\iM}{\iC})}
+  &\to \Swith{(\Ostrengthen{l,\operatorname{id}(\iC)}{\ip}{\iM})}{\iC}\\
+  \Ostrengthen{l}{\ip}{(\Sfunctor{\ix}{\iM}{\iM'})}
+  &\to \Sfunctor{\ix}{\iM}{\Ostrengthen{l}{\ip(X)}{\iM'}}\\
+  \Ostrengthen{l}{\ip}{\Salias{\ip'}}
+  &\to \Salias{\ip}\\[4mm]
+  %
+  \Ostrengthen{l}{\ip}{\Stype{t}{\tau};\iS}
+  &\to \Stype{t}{\tau};(\Ostrengthen{l}{\ip}{\iS}) &\text{when } t\in l\\
+  \Ostrengthen{l}{\ip}{\Stypeabs{t};\iS}
+  &\to \Stypeabs{t};(\Ostrengthen{l}{\ip}{\iS}) &\text{when } t\in l\\
+  \Ostrengthen{l}{\ip}{\Stype{t}{\tau};\iS}
+  &\to \Stype{t}{\ip.t};(\Ostrengthen{l}{\ip}{\iS}) \\
+  \Ostrengthen{l}{\ip}{\Stypeabs{t};\iS}
+  &\to \Stype{t}{\ip.t};(\Ostrengthen{l}{\ip}{\iS}) \\
+  \Ostrengthen{l}{\ip}{\Smodulety{\ix}{\iM};\iS}
+  &\to \Smodulety{\ix}{\Ostrengthen{\operatorname{chop}(l,\ix)}{\ip}{\iM}};
+    (\Ostrengthen{l}{\ip}{\iS}) \\
+  \Ostrengthen{l}{\ip}{\Smoduletype{\iX}{\iM};\iS}
+  &\to \Smoduletype{\iX}{\iM};
+    (\Ostrengthen{l}{\ip}{\iS}) \\[4mm]
+  %
+  \Ostrengthen{l'}{\ip'}{\Sstrengthen{l}{\ip}{\iM}}
+  &\to \Sstrengthen{l}{\ip}{\iM}\\
+  \Ostrengthen{l}{\ip}{\Ssubst{\iC}{\iM}}
+  &\to \Ostrengthen{l}{\ip}{\Osubst{\iC}{\iM}}\\
+\end{align*}\vspace{-3mm}
+\caption{Module strengthening operation -- $\Ostrengthen{l}{\ip}{\iM}$}
+\label{module:strengthen}
+
+\begin{align*}
+  \Osubst{\iC}{\ip.\iX}
+  &\to \Osubst{\iC}{\E(P.\iX)}\\
+  \Osubst{\iC}{\Ssig{\iS}}
+  &\to \Ssig{\Osubst{\iC}{\iS}}\\
+  \Osubst{\iC}{(\Swith{\iM}{\iC'})}
+  &\to \Osubst{\iC}{\Osubst{\iC'}{\iM}}\\
+  \Osubst{\iC}{(\Sfunctor{\ix}{\iM}{\iM'})}
+  &\to \texttt{fail}\\
+  \Osubst{\iC}{\Salias{\ip}}
+  &\to \Salias{\ip} &\text{when } \Osubst{\iC}{\E(P)}\to \_\\[4mm]
+  \Osubst{t = \tau'}{\Stype{t}{\tau};\iS}
+  &\to \Stype{t}{\tau};\iS &\text{when } \subtyp{\E}{\tau'}{\tau}\\
+  \Osubst{\ix = \ip}{\Smodulety{\ix}{\iM};\iS}
+  &\to \Smodulety{\ix}{\Sstrengthen{}{\ip}{\iM}};\iS
+  &\text{when } \iM' = \E(\ip) \text{ and } \submod{\E}{\iM'}{\iM}\\
+  \Osubst{\ix.\Multi\ix.t = \tau}{\Smodulety{\ix}{\iM};\iS}
+  &\to \Smodulety{\ix}{\Osubst{\Multi\ix.t = \tau}{\iM}};\iS\\
+  \Osubst{\ix.\Multi\ix = \ip}{\Smodulety{\ix}{\iM};\iS}
+  &\to \Smodulety{\ix}{\Osubst{\Multi\ix = \ip}{\iM}};\iS\\
+  \Osubst{\iC}{(\iD;\iS)}
+  &\to \iD;\Osubst{\iC}{\iS}
+  &\text{when } id(\iD) \text{ is not a prefix of } id(\iC)\\[4mm]
+  %
+  \Osubst{\iC}{(\Sstrengthen{l}{\ip}{\iM})}
+  &\to \Osubst{\iC}{(\Ostrengthen{l}{\ip}{\iM})}\\
+  \Osubst{\iC}{\Ssubst{\iC'}{\iM}}
+  &\to \Osubst{\iC}{\Osubst{\iC'}{\iM}}\\
+\end{align*}\vspace{-3mm}
+\caption{Substitution operation -- $\Osubst{\iC}{\iM}$}
+\label{module:subst}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main.tex"
+%%% End:

@@ -1,0 +1,31 @@
+\begin{mathpar}
+  \inferrule
+  { \Smodulety{\ix_i}{\iM} \in \E }
+  { \lookup{\E}{\ix_i} = \iM }
+  \and
+  \inferrule
+  { \Smoduletype{\iX_i}{\iM} \in \E }
+  { \lookup{\E}{\iX_i} = \iM }
+  \and
+  \inferrule
+  { \lookup{\E}{\ip} = \Ssig{\iS_1; \Smodulety{\ix}{\iM}; \iS_2} }
+  { \lookup{\E}{\ip.\ix} = \substs{n_i}{\ip.n}{\bv{\iS_1}}{\iM} }
+  \and
+  \inferrule
+  { \lookup{\E}{\iP} = \Ssig{\iS_1; \Smoduletype{\iX}{\iM}; \iS_2} }
+  { \lookup{\E}{\iP.\iX} = \substs{n_i}{\iP.n}{\bv{\iS_1}}{\iM} }
+  \and
+  \inferrule
+  { \lookup{\E}{\iP_f} = \Sfunctor{\ix_i}{\iM_a}{\iM_r} \\
+    \lookup{\E}{\iP_a} = \iM_a }
+  { \lookup{\E}{\Sapp{\iP_f}{\iP_a}} =
+    \Ssubst{\ix = \Stransp{\iP_a}{\iM_a}}{\iM_r} }
+  \and
+  \inferrule
+  { \lookup{\E}{\iP} = \iM }
+  { \lookup{\E}{\Stransp{\iP}{\iM'}} = \Stransp{\iM}{\iM'} }
+\end{mathpar}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:

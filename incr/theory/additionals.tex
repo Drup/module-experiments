@@ -1,0 +1,45 @@
+\begin{mathpar}
+  \inferrule[QualVar]
+  { \wtm[\loc]{\Env}{p}
+    {(\signature{\Sm_1;\valm[\loc']{x_i}{\tau};\Sm_2})} \\
+    \added{\canuseloc{\loc'}{\loc}}
+  }
+  { \wt{\Env}{p.x}{\substs{n_i}{p.n}{\bv{\Sm_1}}{\tau}} }
+  \and
+  \inferrule[QualDefTypeEq]
+  { \wtm[\loc]{\Env}{p}
+    {(\signature{\Sm_1;\typem[\loc']{\typicalt}{\tau};\Sm_2})} \\
+    \added{\canuseloc{\loc'}{\loc}}
+  }
+  { \equivty{\Env}{\appty{\tau_i}{p.t}}
+    {\substi{\alpha_i}{\tau_i}{\substs{n_i}{p.n}{\bv{\Sm_1}}{\tau}}} }
+  \and
+  \inferrule[QualAbsTypeEq]
+  { \wtm[\loc]{\Env}{p}
+    {(\signature{\Sm_1;\typeabsm[\loc']{\typicalt};\Sm_2})} \\
+    \forall i,\ \equivty{\Env}{\tau_i}{\tau'_i} \\
+    \added{\canuseloc{\loc'}{\loc}}
+  }
+  { \equivty{\Env}{\appty{\tau_i}{p.t}}{\appty{\tau'_i}{p.t}} }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule
+  { \bindingty[\loc']{\typicalt}{\tau} \in \Env \\
+    \added{\canuseloc{\loc'}{\loc}}
+  }
+  { \equivty{\Env}{\appty{\tau_j^*}{t_i}}{\tau} }
+  \and
+  \inferrule
+  { \wtm[\loc]{\Env}{p}
+    {(\signature{S_1;\typem[\loc']{\typicalt}{\tau};S_2})} \\
+    \added{\canuseloc{\loc'}{\loc}}
+  }
+  { \equivty{\Env}{\appty{\tau_j^*}{p.t}}{\substs{n_i}{p.n}{\bv{S_1}}{\tau}} }
+\end{mathpar}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:

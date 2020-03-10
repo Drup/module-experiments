@@ -1,0 +1,57 @@
+
+\begin{subfigure}[t]{0.45\linewidth}
+\begin{align*}
+  \htag{Path}
+  \ip ::=&\ \ix_i \mid \ip.\ix\\
+  \iP ::=&\ \ix_i \mid \iP.\ix \mid \Sapp{\iP_1}{\iP_2} \mid \Stransp{\iP}{\iM}
+  \htag{Module Expressions}
+  \im ::=&\ \ip\tag{Variables}\\
+  |&\ \Sconstraint{\im}{\iM}\tag{Opaque Ascription}\\
+  |&\ \Stransp{\im}{\iM}\tag{Transparent Ascription}\\
+  |&\ \Sapp{\im_1}{\im_2}\tag{Functor application}\\
+  |&\ \Sfunctor{\ix_i}{\iM}{\im}\tag{Functor}\\
+  |&\ \Sstruct{\is}\tag{Structure}\\
+  \htag{Structures}
+  \is ::=&\ \Sempty\ |\ \id;\is\\
+  \id ::=&\ \Slet{x_i}{e}\tag{Values}\\
+  |&\ \Stype{t}{\tau}\tag{Types}\\
+  |&\ \Smodule{\ix_i}{\im}\tag{Modules}\\
+  |&\ \Smoduletype{\iX_i}{\iM}\tag{Module types}\\
+  \htag{Core language}
+  e ::=&\ \ip.x \tag{Qualified variable}\\
+  |&\ \dots \tag{Other expressions}\\
+  \tau ::=&\ {\iP.t} \tag{Qualified type}\\
+  |&\ \dots \tag{Other types}
+\end{align*}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.5\linewidth}
+\begin{align*}
+  \htag{Module types}
+  \iMO ::=&\ \iX_i\ |\ \iP.\iX\tag{Variables}\\
+  |&\ \Salias{\iP}\tag{Alias}\\
+  |&\ \Swith{\iM}{\iC}\tag{Substitution}\\
+  |&\ \Sfunctor{X_i}{\iM_1}{\iM_2}\tag{Functor}\\
+  |&\ \Ssig{\iS}\tag{Signature}\\
+  \iM ::=&\ \Ostrengthen{l}{\iP}{\iM}\tag{Strengthening}\\
+  |&\ \Osubst{\iC}{\iM}\tag{Substution}\\
+  |&\ \Otransp{\iM}{\iM'}\tag{Ascription}\\
+  |&\ \iMO\\
+  \htag{Substitutions}
+  \iC ::=&\ \ip.t = \tau\\
+  |&\ \ip = \ip'\\
+  \htag{Signatures}
+  \iS ::=&\ \Sempty\ |\ \iD;\iS\\
+  \iD ::=&\ \Sval{x_i}{\tau}\tag{Values}\\
+  |&\ \Stype{t}{\tau}\tag{Types}\\
+  |&\ \Stypeabs{t}\tag{Abstract types}\\
+  |&\ \Smodulety{\ix_i}{\iM}\tag{Modules}\\
+  |&\ \Smoduletype{\iX_i}{\iM}\tag{Module types}\\
+  \htag{Environments}
+    \E ::=&\ \iS
+\end{align*}
+\end{subfigure}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:

@@ -1,0 +1,84 @@
+\begin{mathpar}
+  \inferrule
+  { \submod{\E}{\Oforce{\E}{\iM}}{\Oforce{\E}{\iM'}} }
+  { \submod{\E}{\iM}{\iM'} }
+  \and
+  \inferrule
+  { \Onormalize{\E}{\iP} = \Onormalize{\E}{\iP'} }
+  { \submod{\E}{\Salias{\iP}}{\Salias{\iP'}} }
+  \and
+  % \inferrule
+  % { }
+  % { \submod{\E}{\ip.\iX}{\ip.\iX} }
+  % \and
+  % \inferrule
+  % { \submod{\E}{\E(\ip)}{\iMO} }
+  % { \submod{\E}{\Salias{\ip}}{\iMO} }
+  % \and
+  % \inferrule
+  % { \submod{\E}{\E(\ip.\iX)}{\iMO} }
+  % { \submod{\E}{\ip.\iX}{\iMO} }
+  % \and
+  % \inferrule
+  % { \submod{\E}{\iMO}{\E(\ip.\iX)} }
+  % { \submod{\E}{\iMO}{\ip.\iX} }
+  % \and
+  \inferrule
+  { \submod{\E}{\resolve{\E}{\iM}}{\resolve{\E}{\iM'}} }
+  { \submod{\E}{\iM}{\iM'} }
+  \and
+  % \inferrule
+  % { \submod{\E}{\Multi\iC}{\Multi\iC'} }
+  % { \submod{\E}{\Swith{\iM}{\Multi\iC}}{\Swith{\iM}{\Multi\iC'}} }
+  % \and
+  \inferrule
+  { \submod{\E}{\iM'_a}{\iM_a} \\
+    \submod{\E,\Smodulety{X}{\iM'_a}}{\iM_r}{\iM'_r}
+  }
+  { \submod{\E}{\Sfunctor{X}{\iM_a}{\iM_r}}{\Sfunctor{X}{\iM'_a}{\iM'_r}} }
+  \and
+  %
+  \inferrule
+  { \pi:\rg{1}{m} \to \rg{1}{n} \\
+    \forall i\in[1;m],\ \submod{\E;\iD_1;\dots;\iD_n}{\iD_{\pi(i)}}{\iD'_i}
+  }
+  { \submod{\E}{\Ssig{\iD_1;\dots;\iD_n}}{\Ssig{\iD'_1;\dots;\iD'_m}} }
+  \and
+  %
+  \inferrule
+  { \subtyp{\E}{\tau_1}{\tau_2} }
+  { \submod{\E}{(\Sval{x_i}{\tau_1})}{(\Sval{x_i}{\tau_2})} }
+  \and
+  \inferrule
+  { \submod{\E}{\iM_1}{\iM_2}  }
+  { \submod{\E}{(\Smodulety{X_i}{\iM_1})}{(\Smodulety{X_i}{\iM_2})} }
+  \and
+  \inferrule
+  { \subtyp{\E}{\tau_1}{\tau_2} }
+  { \submod{\E}
+    {(\Stype{t_i}{\tau_1})}
+    {(\Stype{t_i}{\tau_2})} }
+  \and
+  \inferrule
+  { }
+  { \submod{\E}
+    {(\Stypeabs{t_i})}
+    {(\Stypeabs{t_i})} }
+  \and
+  \inferrule
+  { \subtyp{\E}{t}{\tau} }
+  { \submod{\E}
+    {(\Stypeabs{t_i})}
+    {(\Stype{t_i}{\tau})} }
+  \and
+  \inferrule
+  { }
+  { \submod{\E}
+    {(\Stype{t_i}{\tau_1})}
+    {(\Stypeabs{t_i})} }
+\end{mathpar}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:

@@ -1,0 +1,63 @@
+\begin{mathpar}
+  \inferrule
+  { \wfm{\Env}{\Sm} }
+  { \wfm{\Env}{\signature{\Sm}} }
+  \and
+  \inferrule
+  { }
+  { \wfm{\Env}{\emptym} }
+  \and
+  \inferrule
+  { \wfm[\loc]{\Env}{\Mm_a} \\
+    x_i \notin \bv[\loc]{\Env} \\
+    \wfm[\loc]{\Env;\bindingm[\loc]{X_i}{\Mm_a}}{\Mm_r}
+  }
+  { \wfm[\loc]{\Env}{\functor{X_i}{\Mm_a}{\Mm_r}} }
+  \and
+  % Mixed Functors
+  \addedrule{
+    \inferrule[\added{MixedFunctor}]
+    { \wfm[\sideX]{\Env}{\Mm_a} \\
+      X_i \notin \bv[\sideX]{\Env} \\
+      \wfm[\sideX]{\Env;\bindingm[\sideX]{X_i}{\Mm_a}}{\Mm_r}
+    }
+    { \wfm[\sideX]{\Env}{\functor[\sideX]{X_i}{\Mm_a}{\Mm_r}} }
+    \and
+  }
+  \inferrule
+  { \type{t_i} \notin \bv{\Env} \\
+    \wfm[\mloc]{\Env;\bindingabs{\typicalt}}{\Sm}\\
+    \added{\canbedefloc{\mloc}{\loc}}
+  }
+  { \wfm[\mloc]{\Env}{\typeabsm{\typicalt};\ \Sm} }
+  \and
+  \inferrule
+  { \wfm{\Env}{\Mm} \\
+    x_i \notin \bv[\mloc]{\Env} \\
+    \wfm[\mloc']{\Env;\bindingm[\mloc]{X_i}{\Mm}}{\Sm}\\
+    \added{\canbedefloc{\mloc'}{\mloc}}\\
+    \added{\forall \mloc'' \in \locs{\Mm}.\ \canuseloc{\mloc''}{\mloc}}
+  }
+  { \wfm[\mloc']{\Env}{\moduletym{X_i}{\Mm};\ \Sm} }
+  \and
+  \inferrule
+  { \wf{\Env}{\tau} \\
+    \type{t_i} \notin \bv{\Env} \\
+    \wfm[\mloc]{\Env;\bindingty{\typicalt}{\tau}}{\Sm}\\
+    \added{\canbedefloc{\mloc}{\loc}}
+  }
+  { \wfm[\mloc]{\Env}{\typem{\typicalt}{\tau};\ \Sm} }
+  \and
+  \inferrule
+  { \wf{\Env}{\tau} \\
+    x_i \notin \bv{\Env} \\
+    \wfm[\mloc]{\Env;\binding{x_i}{\tau}}{\Sm}\\
+    \added{\canbedefloc{\mloc}{\loc}}
+  }
+  { \wfm[\mloc]{\Env}{\valm{x_i}{\tau};\ \Sm} }
+\end{mathpar}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:

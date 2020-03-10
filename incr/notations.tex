@@ -1,0 +1,86 @@
+\newcommand\htag[1]{\shortintertext{\textbf{#1}}}
+\newcommand\ddotop{\operatorname{:}}
+\newcommand\Multi[2][{}]{\overline{#2}}
+\newcommand\rg[2]{\left[#1;#2\right]}
+
+%% Term
+\newcommand\im{M}
+\newcommand\iv{V}
+\newcommand\is{S}
+\newcommand\id{D}
+\newcommand\ip{P}
+\newcommand\ix{X}
+
+%% Types
+\newcommand\iM{\mathcal M}
+\newcommand\iMO{{\mathcal M^\circ}}
+\newcommand\iS{\mathcal S}
+\newcommand\iD{\mathcal D}
+\newcommand\iX{\mathcal X}
+\newcommand\iC{\mathcal C}
+\newcommand\iP{\mathcal P}
+
+%% Syntax
+\newcommand\Sapp[2]{#1(#2)}
+\newcommand\Sconstraint[2]{(#1 \ddotop #2)}
+\newcommand\Stransp[2]{(#1 \operatorname{:\!>} #2)}
+\newcommand\Sfunctor[3]{\Sconstraint{#1}{#2} \to #3}
+\newcommand\Salias[1]{(= #1)}
+\newcommand\Swith[2]{#1\ \mathtt{with}\ #2}
+
+\newcommand\Sstruct[1]{\mathtt{struct}\ #1\ \mathtt{end}}
+\newcommand\Ssig[1]{\mathtt{sig}\ #1\ \mathtt{end}}
+\newcommand\Sempty\varepsilon
+
+\newcommand\Ssubst[2]{{#2}_{\color{black}\left[#1\right]}}
+\newcommand\Sstrengthen[3]{#3/_{#1}#2}
+
+\newcommand\Slet[2]{\mathtt{let}\ #1 = #2}
+\newcommand\Sval[2]{\mathtt{val}\ #1 : #2}
+\newcommand\Stype[2]{\mathtt{type}\ #1 = #2}
+\newcommand\Stypeabs[1]{\mathtt{type}\ #1}
+\newcommand\Smodule[2]{\mathtt{module}\ #1 = #2}
+\newcommand\Smodulety[2]{\mathtt{module}\ #1 : #2}
+\newcommand\Smoduletype[2]{\mathtt{module\ type}\ #1 = #2}
+
+%% Env
+\newcommand\E{\Gamma}
+\newcommand\lookup[2]{#1(#2)}
+\newcommand\resolve[2]{\operatorname{resolve}_{#1}(#2)}
+
+% Operation
+\newcommand\Osubst[2]{{#2}_{\color{red}\left[#1\right]}}
+\newcommand\Ostrengthen[3]{#3{\color{red}/_{#1}#2}}
+\newcommand\Otransp[2]{(#1 \operatorname{{\color{red}:\!>}} #2)}
+\newcommand\Oforce[2]{\operatorname{force}_{#1}(#2)}
+\newcommand\Onormalize[2]{\operatorname{normalize}_{#1}(#2)}
+
+\newcommand\subst[3]{#3\!\left[#1 \mapsto #2\right]}
+\newcommand\substs[4]{#4\!\left[#1 \mapsto #2\ \middle|\ #1\in#3\right]}
+\newcommand\bv[1]{\operatorname{BV}(#1)}
+
+%% Jugements
+
+\newcommand\iswt{\operatorname{\triangleright}}
+\newcommand\iswtm{\operatorname{\blacktriangleright}}
+\newcommand\wt[4][]{#2 \iswt_{#1} #3 \ddotop #4}
+\newcommand\wtp[3]{#1 \iswtm #2 \ddotop #3}
+\newcommand\wtm[4][]{#2 \iswtm_{#1} #3 \ddotop #4}
+
+% Welformedness of types and terms
+\newcommand\iswf{\operatorname{\vDash}}
+\newcommand\wf[3][]{#2 \iswf_{#1} #3}
+\newcommand\wfp[2]{#1 \iswf #2}
+\newcommand\wfm[3][]{#2 \iswf_{#1} #3}
+
+% Module inclusion
+\newcommand\issub{<:}
+\newcommand\subtyp[4][]{#2 \iswt_{#1} #3 \issub #4}
+\newcommand\submod[4][]{#2 \iswtm_{#1} #3 \issub #4}
+\newcommand\subpath[4][]{#2 \iswtm_{#1} #3 \lesssim #4}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main.tex"
+%%% End:

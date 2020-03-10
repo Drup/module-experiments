@@ -1,0 +1,193 @@
+
+\documentclass{article}
+
+% Encoding and lang
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+% Graphical packages
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{xspace}
+
+% Math
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{thm-restate}
+% \usepackage{mathrsfs}
+\usepackage{mathtools}
+\usepackage{textcomp}
+\usepackage{gensymb}
+% \usepackage{textgreek}
+\usepackage{multicol}
+
+\usepackage{fullpage}
+
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{definition}{Definition}
+
+\usepackage{listings}
+\usepackage[scaled=0.85]{DejaVuSansMono}
+
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[inline,shortlabels]{enumitem}
+\setlist{leftmargin=*,noitemsep}
+\usepackage{array}
+\usepackage{bm}%Decent bolding for math symbols
+
+\usepackage{natbib}% Good citations and bibliography
+\usepackage{mathpartir} % Syntax trees
+
+\usepackage{cleveref}
+
+\input{notations}
+
+\begin{document}
+
+\begin{figure}[!hb]
+  \input{theory/grammar}
+  \caption{Module language}
+  \label{grammar}
+\end{figure}
+
+Judgements:\\
+\begin{tabular}{ll}
+  $\wtm{\E}{\im}{\iM}$
+  &The module $\im$ is of type $\iM$ in $\E$.
+  See \cref{module:typing}.\\
+
+  $\submod{\E}{\iM}{\iM'}$&
+  The module type $\iM$ is a subtype of $\iM'$ in $\E$.
+  See \cref{module:subtyping}.\\
+
+  $\wfm{\E}{\iM}$ &
+  The module type $\iM$ is well-formed in $\E$.
+  See \cref{module:validity}.
+\end{tabular}\\
+
+Operations:\\
+\begin{tabular}{ll}
+  $\Ostrengthen{l}{\iP}{\iM}$
+  & Strenghten $\iM$ by $\iP$ while ignoring the list of module paths $l$.\\
+  $\Osubst{\iC}{\iM}$
+  & Applies the substitution $\iC$ in $\iM$.\\
+  $\Otransp{\iM}{\iM'}$
+  & Computes the transparent ascription of $\iM$ by $\iM'$.\\
+  $\Oforce{\E}{\iM}$
+  & Forces all the operations in $\iM$ until obtaining a simple module type $\iMO$.
+\end{tabular}\\
+
+Environment accesses:\\
+\begin{tabular}{ll}
+  $\lookup{\E}{\ip}$
+  & Lookup the module or module type $\ip$ in the environment (i.e., the signature)
+    $\E$.\\
+  $\resolve{\E}{\iMO}$
+  & Resolve $\iMO$ until it's not a path (i.e., either an arrow or a signature).\\
+  $\Onormalize{\E}{\iP}$
+  & Normalizes the path $\iP$ in $\E$
+\end{tabular}
+
+\begin{figure}[hbt]
+  \input{theory/incrrules}
+\end{figure}
+
+
+\begin{figure}[hbt]
+  \input{theory/transp}
+\end{figure}
+
+\begin{figure}[!p]
+  \mprset{sep=1.5em}
+  \input{theory/typing}\vspace{-3mm}
+  \caption{Module typing rules -- $\wtm{\E}{\im}{\iM}$}
+  \label{module:typing}
+% % \end{figure}
+
+% \begin{figure}[hbt]
+  \input{theory/subtyping}\vspace{-3mm}
+  \caption{Module subtyping rules -- $\submod{\E}{\iM}{\iM'}$}
+  \label{module:subtyping}
+\end{figure}
+
+\begin{figure}[hbt]
+  \input{theory/lookup}\vspace{-3mm}
+  \caption{Lookup rules -- $\lookup{\E}{\ip} = \iM$}
+  \label{module:lookup}
+% \end{figure}
+
+% \begin{figure}[hbt]
+  \begin{subfigure}[t]{0.3\linewidth}
+    \begin{align*}
+      \Oforce{\E}{\Sstrengthen{l}{\iP}{\iM}}
+      &= \Oforce{\E}{\Ostrengthen{l}{\iP}{\iM}}\\
+      \Oforce{\E}{\Ssubst{\iC}{\iM}}
+      &= \Oforce{\E}{\Osubst{\iC}{\iM}}\\
+      \Oforce{\E}{\Stransp{\iM}{\iM'}}
+      &= \Oforce{\E}{\Otransp{\iM}{\iM'}}\\
+      \Oforce{\E}{\iMO} &= \iMO
+    \end{align*}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.33\linewidth}
+    \begin{align*}
+      \resolve{\E}{\iP}
+      &= \Sstrengthen{}{\iP}{\resolve{\E}{\lookup{\E}{\iP}}}\\
+      \resolve{\E}{\Salias{\iP}}
+      &= \Sstrengthen{}{\iP}{\resolve{\E}{\lookup{\E}{\iP}}}\\
+      \resolve{\E}{\iMO} &= \iMO & \text{otherwise} \\
+    \end{align*}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.33\linewidth}
+    \begin{align*}
+      \Onormalize{\E}{\iP}
+      &=
+        \begin{dcases}
+          \Onormalize{\E}{\iP'} & \text{when } \lookup{\E}{\iP} = \Salias{\iP'} \\
+          \iP & \text{otherwise}
+        \end{dcases}
+    \end{align*}
+  \end{subfigure}
+% \end{figure}
+
+% % \begin{figure}[p]
+%   \input{theory/validity}\vspace{-3mm}
+%   \caption{Module type validity rules -- $\wfm{\Env}{\Mm}$}
+%   \label{module:validity}
+\end{figure}
+
+
+
+
+% \begin{theorem}[Separate Typechecking]\label{ml:separation}
+%   Given a list of module declarations that form a typed program, there exists
+%   an order such that each module can be typechecked with only knowledge
+%   of the type of the previous modules.
+
+%   More formally,
+%   given a list of $n$ declarations $\id_i$ and a signature $\iS$ such that
+%   \[
+%     \wtm{}{(\id_1;\dots;\id_n)}{\iS}
+%   \]
+%   then there exists $n$ definitions $\iD_i$ and a permutation $\pi$ such that
+%   \begin{align*}
+%     \forall i < n,\ &
+%     \wtm{\iD_{1};\dots;\iD_{i}}{\id_{i+1}}{\iD_{i+1}}&
+%     \submod{}{\iD_{\pi(1)};\dots;\iD_{\pi(n)}}{\iS}
+%   \end{align*}
+% \end{theorem}
+
+
+\end{document}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
