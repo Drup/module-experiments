@@ -1,0 +1,184 @@
+\documentclass{article}
+\usepackage{minted}
+\usepackage{alltt}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+\title{High-level error messages for functors}
+\author{Gabriel Radanne and Florian Angeletti}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Functors are one of the most complex features of ML languages. This complexity is reflected in error messages.
+Whenever a functor argument mismatches the expected parameter type, the error message can become lengthy.
+And this issue becomes worse in presence of functors with multiple arguments.
+However, most uses of functors are quite simple, and errors with functors can often be tracked to high-level code changes during refactoring.
+For example, they can be cause by the addition of a new functor argument.
+We propose in this talk a method to tweak the traditional error handling
+for module type error in order to recognise frequent high-level user error
+by analysing functor multi-application as a whole with a edit-distance minimisation
+algorithm.
+\end{abstract}
+
+
+Typical uses of functors are quite simple. Few people use directly higher-order functor with anonymous module arguments. Quite often, the names of functor arguments and parameters even match:
+\begin{minted}{ocaml}
+module type XT = sig type x end
+module type YT = sig type y end
+module F(X: XT)(Y:YT) = struct end
+module X = struct type x = A end
+module Y = struct type y = B end
+module Result = F(X)(Y)
+\end{minted}
+Similarly, most functors have a well-defined arity even if this is not a general property of functors once abstract module types come into play(see section~\ref{variadic} for an illustration).
+
+Another important point is that a lot of functor errors happens during code refactoring, where a handful of changes are common:
+\begin{itemize}
+\item Adding a new argument to a functor definition
+\item Removing a new argument to a functor definition
+\item Changing an argument
+\end{itemize}
+
+For instance, if we refactor the definition of the functor \texttt{F} above and remove the first argument
+
+\begin{minted}{ocaml}
+module F(Y:sig type y end)
+\end{minted}
+
+but we forget to update the definition of the \texttt{Result} module
+
+\begin{minted}{ocaml}
+module Result = F(X)(Y)
+\end{minted}
+\begin{alltt}
+Error: Signature mismatch:
+       Modules do not match: sig type x = X.x = A end is not included in YT
+       The type y is required but not provided
+\end{alltt}
+
+We are not interested in the possibly lengthy mismatch between the module types \texttt{XT} and \texttt{YT}.
+We are more interested in the fact that there is an extra functor argument.
+
+This combination of hard to decipher module type errors and a small class of common high-level errors makes
+a good argument for trying to give user a higher-level view in functor messages.
+
+
+Our talk proposes to detail a simple method to tweak the error handling of functor typing error,
+in order to detect those high-level errors with a higher accuracy.
+
+The implementation enhances the existing type-checking algorithm by driving a common
+edit-distance optimisation function with the inclusion check.
+
+An implementation of those improved message is available as a patch to the Ocaml compiler at
+\url{https://github.com/ocaml/ocaml/pull/9331}
+
+
+\section{Optimising edit-distance for functors}
+
+Consider a functor multi-application
+
+\begin{minted}{ocaml}
+module R = F(X_1)...(X_n)
+\end{minted}
+
+If type-checking this functor application reports an error at position $k$, the standard
+way to report an error would be simply to report the mismatch between expected type of
+the $k$th-argument and the $k$th-parameter. But by doing so, we are losing the context of the
+functor multi-application.
+
+We can try to do better by consider the whole list of arguments, and trying to find the smallest patched argument lists that makes the multi-application typechecks. A patched argument is then either:
+
+\begin{enumerate}
+\item An accepted argument from the original argument list
+\item A deleted argument that we throw away from the original argument list
+\item An additional argument pulled from the expected parameter list
+\item A mismatched argument from the original argument list
+\end{enumerate}
+
+It is then natural to assign a positive weight to those patched arguments to represent how far away they
+are from the arguments that the user has written.
+If only accepted arguments have a zero weight, then we are guaranteed that there is a patched argument list
+with minimal weight.
+
+For instance, in our example
+
+\begin{minted}{ocaml}
+module Result = F(X)(Y)
+\end{minted}
+
+The possible patched arguments would be
+
+\begin{enumerate}
+\item \texttt{[Delete(X); Accept(Y)]}
+\item \texttt{[Change(X);Delete(Y)]}
+\item \texttt{[Add(YT);Delete(X);Delete(Y)]}
+\end{enumerate}
+
+The smallest change is clearly the first one. Consequently, rather than reporting
+the mismatch between \texttt{XT} and \texttt{YT}, we can simply report \texttt{X}
+as an extra-argument:
+\begin{minted}{ocaml}
+module Result = F(X)(Y)
+\end{minted}
+\begin{alltt}
+Error: The functor application is ill-typed.
+       These arguments:
+         X Y
+       do not match these parameters:
+         functor  (Y : YT) -> ...
+  1. The following extra argument is provided X : sig type x = X.x = A end
+  2. Module Y matches the expected module type YT
+\end{alltt}
+
+In term of user-experience, it is important to report that we consider the
+functor multi-application as a whole and how we think the code should be corrected.
+
+In term of implementation, using the usual distance matrix for edit-distance computation, we only need
+$O((\max \mathrm{number_of_arguments} \mathrm{number_of_parameters} )^2)$ module comparisons in the worse case
+scenario.
+This seems fine under the assumption that no users write functors with hundreds of arguments.
+
+\section{The arity problem \label{variadic}}
+
+A possible issue with the edit-distance approach is that the arity of functors is not that well-defined.
+Consider for instance the case:
+\begin{minted}{ocaml}
+module F(X:sig
+  module type t
+  module M:t
+end) = M
+module Ft = struct
+  module M = F
+  module type t = module type of F
+end
+module R = F(Ft)(...)
+\end{minted}
+Then the arity of \texttt{F} depends on its argument, and it is possible to apply \texttt{F} to
+any number of arguments.
+
+One might then fear that in this situation the length of patched argument
+lists might be unbounded.
+However, in this situation, we still have a finite number of syntactic arguments for a concrete applications
+\begin{minted}{ocaml}
+module R = F(X_1)...(X_s)
+\end{minted}
+And it is possible to use this number $s$ of syntactic arguments to limit the length of the patched
+argument being considered to $2 * s$.
+
+Such situation can thus be handled by simply dynamically resizing the edit-distance matrix when
+we discover that accepting a new arguments expanded the number of expected parameters.
+
+\section{Conclusion}
+
+We propose to improve the user experience of error message for functors in the ML family by making
+the error reporter aware of high-level common errors. This is done by combining the classical
+inclusion check algorithm and edit-distance algorithm.
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
