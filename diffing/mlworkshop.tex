@@ -1,28 +1,48 @@
-\documentclass{article}
+\documentclass[a4paper,11pt]{scrartcl}
 \usepackage{minted}
 \usepackage{alltt}
-\usepackage{hyperref}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 \usepackage[dvipsnames]{xcolor}
+\usepackage{xspace}
 
+\usepackage[scaled=0.85]{DejaVuSansMono} % A decent mono font
+\usepackage{enumitem}
+\setitemize{noitemsep,topsep=1pt,parsep=1pt,partopsep=1pt}
+
+\usepackage[bookmarks,colorlinks=true,citecolor=red]{hyperref}
+\usepackage[noabbrev,capitalize]{cleveref}
+  
 \newcommand{\error}[1]{\textcolor{red}{#1}}
 \newcommand{\ok}[1]{\textcolor{OliveGreen}{#1}}
 
 \title{High-level error messages for modules through diffing}
-\author{Gabriel Radanne and Florian Angeletti}
+\author{
+  Gabriel \textsc{Radanne}\\
+  Inria\\
+  \href{mailto:gabriel.radanne@inria.fr}
+  {\nolinkurl{gabriel.radanne@inria.fr}}
+  \and
+  Florian \textsc{Angeletti}\\
+  Inria\\
+  \href{mailto:florian.angeletti@inria.fr}
+  {\nolinkurl{florian.angeletti@inria.fr}}
+}
 \begin{document}
 \maketitle
 
 \begin{abstract}
 Modules are one of the most complex features of ML languages. This complexity is reflected in error messages.
-Whenever two module types are mismatched, it is hard to identify and report the source of the error.
-Consequently, type checker often resort to printing the whole module types, and hope that the human user
-will be able to navigate the sea of definitions.
-We propose to improve module level error messages by coupling classical typechecker and diffing
-algorithm. This gives the best of both world, the typechecker deals with the gritty details of
-the ML module system whereas the diffing algorithm try to give a higher level view of the error.
-And there is a large literature on using diffing algorithm to find the minimal difference between generic trees.
+Whenever two module types are mismatched, it is hard to identify and report the exact source of the error.
+Consequently, typecheckers often resort to printing the whole module types, and hope that the human user will navigate the sea of definitions.
+
+We propose to improve module error messages by coupling classical typechecking with
+a diffing algorithm.
+The typechecker deals with the gritty details of
+the ML module system whereas the diffing algorithm summarizes the error through
+a higher level view.
+The large literature on diffing algorithms allows us to pick and choose
+the exact algorithm adapted for signatures, functors applications, submodules, etc.
 \end{abstract}
 
 
@@ -30,13 +50,13 @@ Typical uses of module are quite simple. Few people use directly higher-order fu
 \begin{minted}{ocaml}
 module type XT = sig type x end
 module type YT = sig type y end
-module F(X: XT)(Y:YT) = struct end
+module F(X: XT)(Y:YT) = struct ... end
 module X = struct type x = A end
 module Y = struct type y = B end
 module Result = F(X)(Y)
 \end{minted}
 
-Another important point is that a lot of module type errors happens during code refactoring, where a handful of changes are common:
+Furthermore, module type errors often happens during code refactoring, where a handful of changes are common:
 \begin{itemize}
 \item Adding a new item
 \item Removing an old item
@@ -49,12 +69,12 @@ For instance, if we refactor the definition of the functor \texttt{F} above and 
 module F(Y:sig type y end)
 \end{minted}
 
-but we forget to update the definition of the \texttt{Result} module, the previously working code
+but forget to update the definition of the \texttt{Result} module, the previously working code
 
 \begin{minted}{ocaml}
 module Result = F(X)(Y)
 \end{minted}
-yields now an error
+now yields an error
 \begin{alltt}
 Error: Signature mismatch:
        Modules do not match: sig type x = X.x = A end is not included in YT
@@ -66,13 +86,24 @@ However, we are not interested in the possibly lengthy mismatch between the modu
 
 This combination of hard to decipher module type errors and a small class of common high-level errors makes
 a good argument for trying to give user a higher-level view in functor messages.
-Our idea is to use the tree-like shape of module types to compare them using classical diffing algorithm
-on trees.
+We propose to use the tree-like shape of module types to leverage
+\emph{diffing algorithm} on trees and lists.
 
-We have an implementation of this approach focusing of functor multi-applications available as a patch to the
-Ocaml compiler at
-\url{https://github.com/ocaml/ocaml/pull/9331}
+Diffing algorithms have a long history in many domains. For linear texts, the
+Longest Common Subsequence problem (CITE) has been used for code version control through systems like git (CITE) or wikis. A more general version
+using edit distances (CITE) is commonly used for spellchecking and bioinformatics.
+More recently, diffing for trees has found a large application
+in Web programming for HTML interfaces. This diversity gives
+us a very fertile ground to pick diffing algorithms adapted to the exact
+mismatch at hand, from edit distances for functor applications to
+tree diffs for signatures with submodules.
 
+We know give
+a short account of our application of these ideas to the case
+of functor applications, which
+we implemented in the OCaml compiler%
+\footnote{\url{https://github.com/ocaml/ocaml/pull/9331}}.
+We then sketch a work in progress application in the context of module signatures.
 
 \section{Optimising edit-distance for functors}
 
@@ -170,4 +201,5 @@ that can detect higher-level errors while remaining aware of the low-level error
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: t
+%%% TeX-command-extra-options: "-shell-escape"
 %%% End:
