@@ -6,7 +6,7 @@
 \usepackage[dvipsnames]{xcolor}
 \usepackage{xspace}
 
-\usepackage[scaled=0.85]{DejaVuSansMono} % A decent mono font
+\usepackage[scaled=0.8]{DejaVuSansMono} % A decent mono font
 \usepackage{enumitem}
 \setitemize{noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
 \setenumerate{noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
@@ -65,17 +65,13 @@ Furthermore, module type errors often happens during code refactoring, where a h
 \end{itemize}
 
 For instance, if we refactor the definition of the functor \texttt{F} above and remove the first argument
-
-\begin{minted}{ocaml}
-module F(Y:sig type y end)
-\end{minted}
-
 but forget to update the definition of the \texttt{Result} module, the previously working code
+now yields an error
 
 \begin{minted}{ocaml}
+module F(Y:sig type y end) = struct ... end
 module Result = F(X)(Y)
 \end{minted}
-now yields an error
 \begin{alltt}
 Error: Signature mismatch:
        Modules do not match: sig type x = X.x = A end is not included in YT
@@ -84,14 +80,14 @@ Error: Signature mismatch:
 
 However, we are not interested in the possibly lengthy mismatch between the module types \texttt{XT} and
 \texttt{YT}. We are more interested in the fact that there is an extra functor argument.
-
+%
 This combination of hard to decipher module type errors and a small class of common high-level errors makes
 a good argument for trying to give user a higher-level view in functor messages.
 We propose to use the tree-like shape of module types to leverage
 \emph{diffing algorithm} on trees and lists.
 
 Diffing algorithms have a long history in many domains. For linear texts, the
-Longest Common Subsequence problem (CITE) has been used for code version control through systems like git (CITE) or wikis. A more general version
+Longest Common Subsequence problem (CITE) is used for code versioning (CITE) and wikis. A more general version
 using edit distances (CITE) is commonly used for spellchecking and bioinformatics.
 More recently, diffing for trees has found a large application
 in Web programming for HTML interfaces. This diversity gives
@@ -99,11 +95,9 @@ us a very fertile ground to pick diffing algorithms adapted to the exact
 mismatch at hand, from edit distances for functor applications to
 tree diffs for signatures with submodules.
 
-We know give
-a short account of our application of these ideas to the case
-of functor applications, which
-we implemented in the OCaml compiler%
-\footnote{\url{https://github.com/ocaml/ocaml/pull/9331}}.
+We now demonstrate these ideas on functor applications, which
+we implemented in the OCaml compiler
+(\url{https://github.com/ocaml/ocaml/pull/9331}).
 In the talk, we will present the larger context, its application to signatures
 and some technical details.
 
@@ -136,10 +130,11 @@ It is then natural to assign a positive weight to those patched arguments to rep
 are from the arguments that the user has written.
 If only accepted arguments have a zero weight, then we are guaranteed that there is a patched argument list
 with minimal weight.
-
+%
 For instance, in our example
 
 \begin{minted}{ocaml}
+module F(Y:sig type y end) = struct ... end
 module Result = F(X)(Y)
 \end{minted}
 
@@ -154,9 +149,6 @@ The possible patched arguments would be
 The smallest change is clearly the first one. Consequently, rather than reporting
 the mismatch between \texttt{XT} and \texttt{YT}, we can simply report \texttt{X}
 as an extra-argument:
-\begin{minted}{ocaml}
-module Result = F(X)(Y)
-\end{minted}
 \begin{alltt}
 \error{Error}: The functor application is ill-typed.
        These arguments:
@@ -176,9 +168,9 @@ This work also applies to inclusion tests between two functor signatures.
 
 Our unoptimized implementation uses a variant of the classical
 Wagner–Fischer algorithm (CITE) with a complexity of
-$O(\max(\mathrm{number\_of\_arguments},\mathrm{number\_of\_parameters})^2)$ module comparisons in the worse case.
-This is fine in practice, since functors applications are usually short.
-More efficient versions such as Myers algorithm (CITE) could also be used.
+$O(\max(\mathrm{|arguments|,|parameters|})^2)$ module comparisons in the worse case.
+This is sufficient in practice, since functors applications are usually short.
+More efficient (CITE Myers) could also be used.
 
 So far, we only considered the Levenshtein distance, which include
 insertion, deletion and substitutions (i.e., mismatchs). We could easily extend
