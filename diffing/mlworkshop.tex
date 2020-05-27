@@ -4,26 +4,29 @@
 \usepackage{hyperref}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
+\usepackage[dvipsnames]{xcolor}
 
-\title{High-level error messages for functors}
+\newcommand{\error}[1]{\textcolor{red}{#1}}
+\newcommand{\ok}[1]{\textcolor{OliveGreen}{#1}}
+
+\title{High-level error messages for modules through diffing}
 \author{Gabriel Radanne and Florian Angeletti}
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Functors are one of the most complex features of ML languages. This complexity is reflected in error messages.
-Whenever a functor argument mismatches the expected parameter type, the error message can become lengthy.
-And this issue becomes worse in presence of functors with multiple arguments.
-However, most uses of functors are quite simple, and errors with functors can often be tracked to high-level code changes during refactoring.
-For example, they can be cause by the addition of a new functor argument.
-We propose in this talk a method to tweak the traditional error handling
-for module type error in order to recognise frequent high-level user error
-by analysing functor multi-application as a whole with a edit-distance minimisation
-algorithm.
+Modules are one of the most complex features of ML languages. This complexity is reflected in error messages.
+Whenever two module types are mismatched, it is hard to identify and report the source of the error.
+Consequently, type checker often resort to printing the whole module types, and hope that the human user
+will be able to navigate the sea of definitions.
+We propose to improve module level error messages by coupling classical typechecker and diffing
+algorithm. This gives the best of both world, the typechecker deals with the gritty details of
+the ML module system whereas the diffing algorithm try to give a higher level view of the error.
+And there is a large literature on using diffing algorithm to find the minimal difference between generic trees.
 \end{abstract}
 
 
-Typical uses of functors are quite simple. Few people use directly higher-order functor with anonymous module arguments. Quite often, the names of functor arguments and parameters even match:
+Typical uses of module are quite simple. Few people use directly higher-order functor with anonymous module arguments and labyrinth of module type definitions. Quite often, the names of functor arguments and parameters even match:
 \begin{minted}{ocaml}
 module type XT = sig type x end
 module type YT = sig type y end
@@ -32,13 +35,12 @@ module X = struct type x = A end
 module Y = struct type y = B end
 module Result = F(X)(Y)
 \end{minted}
-Similarly, most functors have a well-defined arity even if this is not a general property of functors once abstract module types come into play(see section~\ref{variadic} for an illustration).
 
-Another important point is that a lot of functor errors happens during code refactoring, where a handful of changes are common:
+Another important point is that a lot of module type errors happens during code refactoring, where a handful of changes are common:
 \begin{itemize}
-\item Adding a new argument to a functor definition
-\item Removing a new argument to a functor definition
-\item Changing an argument
+\item Adding a new item
+\item Removing an old item
+\item Changing the type of an item
 \end{itemize}
 
 For instance, if we refactor the definition of the functor \texttt{F} above and remove the first argument
@@ -47,42 +49,41 @@ For instance, if we refactor the definition of the functor \texttt{F} above and 
 module F(Y:sig type y end)
 \end{minted}
 
-but we forget to update the definition of the \texttt{Result} module
+but we forget to update the definition of the \texttt{Result} module, the previously working code
 
 \begin{minted}{ocaml}
 module Result = F(X)(Y)
 \end{minted}
+yields now an error
 \begin{alltt}
 Error: Signature mismatch:
        Modules do not match: sig type x = X.x = A end is not included in YT
        The type y is required but not provided
 \end{alltt}
 
-We are not interested in the possibly lengthy mismatch between the module types \texttt{XT} and \texttt{YT}.
-We are more interested in the fact that there is an extra functor argument.
+However, we are not interested in the possibly lengthy mismatch between the module types \texttt{XT} and
+\texttt{YT}. We are more interested in the fact that there is an extra functor argument.
 
 This combination of hard to decipher module type errors and a small class of common high-level errors makes
 a good argument for trying to give user a higher-level view in functor messages.
+Our idea is to use the tree-like shape of module types to compare them using classical diffing algorithm
+on trees.
 
-
-Our talk proposes to detail a simple method to tweak the error handling of functor typing error,
-in order to detect those high-level errors with a higher accuracy.
-
-The implementation enhances the existing type-checking algorithm by driving a common
-edit-distance optimisation function with the inclusion check.
-
-An implementation of those improved message is available as a patch to the Ocaml compiler at
+We have an implementation of this approach focusing of functor multi-applications available as a patch to the
+Ocaml compiler at
 \url{https://github.com/ocaml/ocaml/pull/9331}
 
 
 \section{Optimising edit-distance for functors}
 
-Consider a functor multi-application
+Functors are a good starting points for a diffing analysis, because there is a
+stark contrast between the higher-level view of a functor multi-application
 
 \begin{minted}{ocaml}
 module R = F(X_1)...(X_n)
 \end{minted}
 
+and the left-to-right biased view of the typechecker.
 If type-checking this functor application reports an error at position $k$, the standard
 way to report an error would be simply to report the mismatch between expected type of
 the $k$th-argument and the $k$th-parameter. But by doing so, we are losing the context of the
@@ -123,13 +124,13 @@ as an extra-argument:
 module Result = F(X)(Y)
 \end{minted}
 \begin{alltt}
-Error: The functor application is ill-typed.
+\error{Error}: The functor application is ill-typed.
        These arguments:
-         X Y
+         \error{X} \ok{Y}
        do not match these parameters:
-         functor  (Y : YT) -> ...
-  1. The following extra argument is provided X : sig type x = X.x = A end
-  2. Module Y matches the expected module type YT
+         functor  \ok{(Y : YT)} -> ...
+  \error{1.} The following extra argument is provided X : sig type x = X.x = A end
+  \ok{2.} Module Y matches the expected module type YT
 \end{alltt}
 
 In term of user-experience, it is important to report that we consider the
@@ -140,9 +141,7 @@ $O((\max \mathrm{number_of_arguments} \mathrm{number_of_parameters} )^2)$ module
 scenario.
 This seems fine under the assumption that no users write functors with hundreds of arguments.
 
-\section{The arity problem \label{variadic}}
-
-A possible issue with the edit-distance approach is that the arity of functors is not that well-defined.
+A possible obstacle with the edit-distance approach is that the arity of functors is not that well-defined.
 Consider for instance the case:
 \begin{minted}{ocaml}
 module F(X:sig
@@ -156,25 +155,15 @@ end
 module R = F(Ft)(...)
 \end{minted}
 Then the arity of \texttt{F} depends on its argument, and it is possible to apply \texttt{F} to
-any number of arguments.
-
-One might then fear that in this situation the length of patched argument
-lists might be unbounded.
-However, in this situation, we still have a finite number of syntactic arguments for a concrete applications
-\begin{minted}{ocaml}
-module R = F(X_1)...(X_s)
-\end{minted}
-And it is possible to use this number $s$ of syntactic arguments to limit the length of the patched
-argument being considered to $2 * s$.
-
-Such situation can thus be handled by simply dynamically resizing the edit-distance matrix when
-we discover that accepting a new arguments expanded the number of expected parameters.
+any number of arguments. However, in practice, this only requires a small change to the diffing
+algorithm.
 
 \section{Conclusion}
 
-We propose to improve the user experience of error message for functors in the ML family by making
+We propose a methodology to improve the user experience of error message for functors in the ML family by making
 the error reporter aware of high-level common errors. This is done by combining the classical
-inclusion check algorithm and edit-distance algorithm.
+inclusion check algorithm and diffing algorithm. This leads to much better focused error messages
+that can detect higher-level errors while remaining aware of the low-level errors.
 
 \end{document}
 
