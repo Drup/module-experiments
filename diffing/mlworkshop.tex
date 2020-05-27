@@ -8,7 +8,8 @@
 
 \usepackage[scaled=0.85]{DejaVuSansMono} % A decent mono font
 \usepackage{enumitem}
-\setitemize{noitemsep,topsep=1pt,parsep=1pt,partopsep=1pt}
+\setitemize{noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
+\setenumerate{noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
 
 \usepackage[bookmarks,colorlinks=true,citecolor=red]{hyperref}
 \usepackage[noabbrev,capitalize]{cleveref}
@@ -103,12 +104,13 @@ a short account of our application of these ideas to the case
 of functor applications, which
 we implemented in the OCaml compiler%
 \footnote{\url{https://github.com/ocaml/ocaml/pull/9331}}.
-We then sketch a work in progress application in the context of module signatures.
+In the talk, we will present the larger context, its application to signatures
+and some technical details.
 
 \section{Optimising edit-distance for functors}
 
-Functors are a good starting points for a diffing analysis, because there is a
-stark contrast between the higher-level view of a functor multi-application
+As we pointed out before, functors applications are often the source
+of complex type errors. This is partially due to the contrast between the higher-level view of a functor multi-application
 
 \begin{minted}{ocaml}
 module R = F(X_1)...(X_n)
@@ -120,7 +122,8 @@ way to report an error would be simply to report the mismatch between expected t
 the $k$th-argument and the $k$th-parameter. But by doing so, we are losing the context of the
 functor multi-application.
 
-We can try to do better by consider the whole list of arguments, and trying to find the smallest patched argument lists that makes the multi-application typechecks. A patched argument is then either:
+By considering the whole list of arguments, we can find the smallest patched
+argument lists that makes the multi-application typechecks. A patched argument is then either:
 
 \begin{enumerate}
 \item An accepted argument from the original argument list
@@ -164,37 +167,56 @@ module Result = F(X)(Y)
   \ok{2.} Module Y matches the expected module type YT
 \end{alltt}
 
-In term of user-experience, it is important to report that we consider the
+It is important to inform users that we consider the
 functor multi-application as a whole and how we think the code should be corrected.
+These error messages scale to fairly complex uses (as can be seen in the
+patch linked previously) with high-order, dependent or even variadic functors,
+using the full panel of advanced ML features.
+This work also applies to inclusion tests between two functor signatures.
 
-In term of implementation, using the usual distance matrix for edit-distance computation, we only need
-$O((\max \mathrm{number_of_arguments} \mathrm{number_of_parameters} )^2)$ module comparisons in the worse case
-scenario.
-This seems fine under the assumption that no users write functors with hundreds of arguments.
+Our unoptimized implementation uses a variant of the classical
+Wagner–Fischer algorithm (CITE) with a complexity of
+$O(\max(\mathrm{number\_of\_arguments},\mathrm{number\_of\_parameters})^2)$ module comparisons in the worse case.
+This is fine in practice, since functors applications are usually short.
+More efficient versions such as Myers algorithm (CITE) could also be used.
 
-A possible obstacle with the edit-distance approach is that the arity of functors is not that well-defined.
-Consider for instance the case:
-\begin{minted}{ocaml}
-module F(X:sig
-  module type t
-  module M:t
-end) = M
-module Ft = struct
-  module M = F
-  module type t = module type of F
-end
-module R = F(Ft)(...)
-\end{minted}
-Then the arity of \texttt{F} depends on its argument, and it is possible to apply \texttt{F} to
-any number of arguments. However, in practice, this only requires a small change to the diffing
-algorithm.
+So far, we only considered the Levenshtein distance, which include
+insertion, deletion and substitutions (i.e., mismatchs). We could easily extend
+our implementation to permutations, however it is unclear how to present
+such a mix of operations to the user in a clear manner.
+One case that could be worth investigating is when a simple permutation,
+without any other operation,
+is sufficient to make the application typechecks. We could then simply
+inform the user to reorder the arguments in the right order.
+
+% \paragraph{Variadic functors}
+
+% A possible obstacle with the edit-distance approach is that the arity of functors is not that well-defined.
+% Consider for instance the case:
+% \begin{minted}{ocaml}
+% module F(X:sig
+%   module type t
+%   module M:t
+% end) = M
+% module Ft = struct
+%   module M = F
+%   module type t = module type of F
+% end
+% module R = F(Ft)(...)
+% \end{minted}
+% Then the arity of \texttt{F} depends on its argument, and it is possible to apply \texttt{F} to
+% any number of arguments. However, in practice, this only requires a small change to the diffing
+% algorithm.
 
 \section{Conclusion}
 
-We propose a methodology to improve the user experience of error message for functors in the ML family by making
-the error reporter aware of high-level common errors. This is done by combining the classical
-inclusion check algorithm and diffing algorithm. This leads to much better focused error messages
-that can detect higher-level errors while remaining aware of the low-level errors.
+We propose a methodology to improve the user experience of error message for modules in ML languages by providing high-level reports.
+This is done by combining the classical
+inclusion check algorithm with diffing algorithms, leading to much more
+focused error messages.
+In the talk, we will present the application to both functors arguments and
+signature, and explore technical details, for instance the handling of variadic
+functors.
 
 \end{document}
 
