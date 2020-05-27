@@ -12,6 +12,10 @@
 \setitemize{noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
 \setenumerate{noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
 
+
+\usepackage[style=numeric,sorting=ynt,natbib=true]{biblatex}
+\addbibresource{diff.bib}
+
 \usepackage[bookmarks,colorlinks=true,citecolor=red]{hyperref}
 \usepackage[noabbrev,capitalize]{cleveref}
   
@@ -89,10 +93,11 @@ We propose to use the tree-like shape of module types to leverage
 \emph{diffing algorithm} on trees and lists.
 
 Diffing algorithms have a long history in many domains. For linear texts, the
-Longest Common Subsequence problem (CITE) is used for code versioning (CITE) and wikis. A more general version
-using edit distances (CITE) is commonly used for spellchecking and bioinformatics.
-More recently, diffing for trees has found a large application
-in Web programming for HTML interfaces. This diversity gives
+Longest Common Subsequence problem~\cite{DBLP:conf/spire/BergrothHR00} is used for code versioning and wikis. A more general version
+using edit distances~\cite{DBLP:journals/csur/Navarro01} is commonly used for spellchecking and bioinformatics.
+More recently, diffing for trees~\cite{DBLP:journals/tcs/Bille05}
+has found a large application
+in Web programming for UIs~\cite{reactjs}. This diversity gives
 us a very fertile ground to pick diffing algorithms adapted to the exact
 mismatch at hand, from edit distances for functor applications to
 tree diffs for signatures with submodules.
@@ -168,11 +173,12 @@ patch linked previously) with high-order, dependent or even variadic functors,
 using the full panel of advanced ML features.
 This work also applies to inclusion tests between two functor signatures.
 
-Our unoptimized implementation uses a variant of the classical
-Wagner–Fischer algorithm (CITE) with a complexity of
+Our unoptimized implementation uses a variant of the
+Wagner–Fischer algorithm~\cite{DBLP:journals/jacm/WagnerF74} with a complexity of
 $O(\max(\mathrm{|arguments|,|parameters|})^2)$ module comparisons in the worse case.
 This is sufficient in practice, since functors applications are usually short.
-More efficient algorithms (CITE Myers) could also be used.
+More efficient algorithms~\cite{DBLP:journals/siamcomp/LandauMS98} could also be
+used.
 
 So far, we only considered the Levenshtein distance, which include
 insertion, deletion and substitutions (i.e., mismatchs). We could easily extend
