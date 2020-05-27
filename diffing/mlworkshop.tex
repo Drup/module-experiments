@@ -18,7 +18,7 @@
 
 \usepackage[bookmarks,colorlinks=true,citecolor=red]{hyperref}
 \usepackage[noabbrev,capitalize]{cleveref}
-  
+
 \newcommand{\error}[1]{\textcolor{red}{#1}}
 \newcommand{\ok}[1]{\textcolor{OliveGreen}{#1}}
 
@@ -52,12 +52,12 @@ The large literature on diffing algorithms allows us to pick and choose
 the exact algorithm adapted for signatures, functors applications, submodules, etc.
 \end{abstract}
 
-
+\section{Motivation}
 Typical uses of module are quite simple. Few people use directly higher-order functor with anonymous module arguments and labyrinth of module type definitions. Quite often, the names of functor arguments and parameters even match:
 \begin{minted}{ocaml}
 module type XT = sig type x end
 module type YT = sig type y end
-module F(X: XT)(Y:YT) = struct ... end
+module F(X:XT)(Y:YT) = struct ... end
 module X = struct type x = A end
 module Y = struct type y = B end
 module Result = F(X)(Y)
@@ -75,11 +75,11 @@ but forget to update the definition of the \texttt{Result} module, the previousl
 now yields an error
 
 \begin{minted}{ocaml}
-module F(Y:sig type y end) = struct ... end
+module F(Y:YT) = struct ... end
 module Result = F(X)(Y)
 \end{minted}
 \begin{alltt}
-Error: Signature mismatch:
+\error{Error}: Signature mismatch:
        Modules do not match: sig type x = X.x = A end is not included in YT
        The type y is required but not provided
 \end{alltt}
@@ -88,7 +88,7 @@ However, we are not interested in the possibly lengthy mismatch between the modu
 \texttt{YT}. We are more interested in the fact that there is an extra functor argument.
 %
 This combination of hard to decipher module type errors and a small class of common high-level errors makes
-a good argument for trying to give user a higher-level view in functor messages.
+a good argument for trying to give users a higher-level view in module-level type error messages.
 We propose to use the tree-like shape of module types to leverage
 \emph{diffing algorithm} on trees and lists.
 
@@ -105,7 +105,7 @@ tree diffs for signatures with submodules.
 We now demonstrate these ideas on functor applications, which
 we implemented in the OCaml compiler
 (\url{https://github.com/ocaml/ocaml/pull/9331}).
-In the talk, we will present the larger context, its application to signatures
+In the talk, we will present the larger context, its application to signatures,
 and some technical details.
 
 \section{Optimising edit-distance for functors}
@@ -116,7 +116,7 @@ of complex type errors. This is partially due to the contrast between the higher
 \begin{minted}{ocaml}
 module R = F(X_1)...(X_n)
 \end{minted}
-
+%
 and the left-to-right biased view of the typechecker.
 If type-checking this functor application reports an error at position $k$, the standard
 way to report an error would be simply to report the mismatch between expected type of
@@ -124,7 +124,7 @@ the $k$th-argument and the $k$th-parameter. But by doing so, we are losing the c
 functor multi-application.
 
 By considering the whole list of arguments, we can find the smallest patched
-argument lists that makes the multi-application typechecks. A patched argument is then either:
+argument lists that make the multi-application typechecks. A patched argument is here either:
 
 \begin{enumerate}
 \item An accepted argument from the original argument list
@@ -168,8 +168,8 @@ as an extra-argument:
 
 It is important to inform users that we consider the
 functor multi-application as a whole and how we think the code should be corrected.
-These error messages scale to fairly complex uses (as can be seen in the
-patch linked previously) with high-order, dependent or even variadic functors,
+In our experience, these error messages scale to fairly complex uses (as can be seen in the
+patch linked previously) with high-order, dependent, or even variadic functors,
 using the full panel of advanced ML features.
 This work also applies to inclusion tests between two functor signatures.
 
@@ -180,8 +180,8 @@ This is sufficient in practice, since functors applications are usually short.
 More efficient algorithms~\cite{DBLP:journals/siamcomp/LandauMS98} could also be
 used.
 
-So far, we only considered the Levenshtein distance, which include
-insertions, deletions and substitutions (i.e., mismatchs). We could easily extend
+So far, we only considered the Levenshtein distance, which includes
+insertions, deletions, and substitutions (i.e., mismatchs). We could easily extend
 our implementation to transpositions but it is unclear how to present
 such a mix of operations to the user in a clear manner.
 One case that could be worth investigating is when a simple permutation,
@@ -215,7 +215,7 @@ This is done by combining the classical
 inclusion check algorithm with diffing algorithms, leading to much more
 focused error messages.
 In the talk, we will present the application to both functors arguments and
-signature, explore technical details such as the handling variadic functors,
+signature, explore technical details such as the handling of variadic functors,
 and compare with existing error messages.
 
 \printbibliography
