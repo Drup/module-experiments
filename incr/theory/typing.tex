@@ -13,7 +13,7 @@
   % { \wtm{\E}{\ip}{\Sstrengthen{}{\ip}{\iM}} }
   % \and
   \inferrule
-  { \wtm{\E}{\im}{\iM'} \\ \submod{\E}{\iM'}{\iM} }
+  { \wtm{\E}{\im}{\iM'} \\ \submod{\E}{\iM'}{\iM}{\_} }
   { \wtm{\E}{\im}{\iM} }
   \and
   \inferrule
@@ -21,15 +21,17 @@
   { \wtm{\E}{\Sconstraint{\im}{\iM}}{\iM} }
   \and
   \inferrule
-  { \wfm{\E}{\iM} \\ \wtm{\E}{\im}{\iM_i} }
-  { \wtm{\E}{\Stransp{\im}{\iM}}{\Stransp{\iM_i}{\iM}} }
+  { \wtm{\E}{\im}{\iM_i} \\ \submod{\E}{\iM_i}{\iM}{\iM_r} }
+  { \wtm{\E}{\Stransp{\im}{\iM}}{\iM_r} }
   %
   \and
   \inferrule
-  { \wtm{\E}{\im_f}{\Sfunctor{\ix_i}{\iM_a}{\iM_r}} \\
-    \wtm{\E}{\im_a}{\iM_a}
+  { \wtm{\E}{\im_f}{\Sfunctor{\ix}{\iM_a}{\iM_r}} \\
+    \wtm{\E}{\im}{\iM} \\
+    \submod{\E}{\iM}{\iM_a}{\iM_c}
   }
-  { \wtm{\E}{\Sapp{\im_f}{\im_a}}{\Ssubst{\ix = \Stransp{\im_a}{\iM_a}}{\iM_r}} }
+  { \wtm{\E}{\Sapp{\im_f}{\im}}
+    {\Osubst{\ix : \iM_c}{\iM_r}} }
   \and
   % \inferrule
   % { \wtm{\E}{\im_f}{\Sfunctor{\ix_i}{\iM}{\iM_r}} \\

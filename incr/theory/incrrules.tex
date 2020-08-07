@@ -13,15 +13,18 @@
   &\to \Stransp{\Ostrengthen{l}{\iP}{\iM}}{\iM'}\\[4mm]
   %
   \Ostrengthen{l}{\iP}{\Stype{t}{\tau};\iS}
-  &\to \Stype{t}{\tau};(\Ostrengthen{l}{\iP}{\iS}) &\text{when } t\notin l\\
+  &\to \Stype{t}{\iP.t};(\Ostrengthen{l}{\iP}{\iS}) &\text{when } t\notin l\\
+  \Ostrengthen{l}{\iP}{\Stype{t}{\tau};\iS}
+  &\to \Stype{t}{\tau};(\Ostrengthen{l}{\iP}{\iS}) &\text{when } t\in l\\
+  \Ostrengthen{l}{\iP}{\Stypeabs{t};\iS}
+  &\to \Stype{t}{\iP.t};(\Ostrengthen{l}{\iP}{\iS}) &\text{when } t\notin l\\
   \Ostrengthen{l}{\iP}{\Stypeabs{t};\iS}
   &\to \Stypeabs{t};(\Ostrengthen{l}{\iP}{\iS}) &\text{when } t\in l\\
-  \Ostrengthen{l}{\iP}{\Stype{t}{\tau};\iS}
-  &\to \Stype{t}{\iP.t};(\Ostrengthen{l}{\iP}{\iS}) \\
-  \Ostrengthen{l}{\iP}{\Stypeabs{t};\iS}
-  &\to \Stype{t}{\iP.t};(\Ostrengthen{l}{\iP}{\iS}) \\
+  % \Ostrengthen{l}{\iP}{\Smodulety{\ix}{\iM};\iS}
+  % &\to \Smodulety{\ix}{\Ostrengthen{\operatorname{chop}(l,\ix)}{\iP.\ix}{\iM}};
+  %   (\Ostrengthen{l}{\iP}{\iS}) &\text{when } \ix\notin l\\
   \Ostrengthen{l}{\iP}{\Smodulety{\ix}{\iM};\iS}
-  &\to \Smodulety{\ix}{\Ostrengthen{\operatorname{chop}(l,\ix)}{\iP.\ix}{\iM}};
+  &\to \Smodulety{\ix}{\Salias{\iP.\ix}};
     (\Ostrengthen{l}{\iP}{\iS}) &\text{when } \ix\notin l\\
   \Ostrengthen{l}{\iP}{\Smodulety{\ix}{\iM};\iS}
   &\to \Smodulety{\ix}{\iM};
@@ -32,47 +35,47 @@
   %
   \Ostrengthen{l'}{\iP'}{\Sstrengthen{l}{\iP}{\iM}}
   &\to \Sstrengthen{l}{\iP}{\iM}\\
-  \Ostrengthen{l}{\iP}{\Ssubst{\iC}{\iM}}
-  &\to \Ostrengthen{l}{\iP}{\Osubst{\iC}{\iM}}\\
+  \Ostrengthen{l}{\iP}{\Senrich{\iC}{\iM}}
+  &\to \Ostrengthen{l}{\iP}{\Oenrich{\iC}{\iM}}\\
 \end{align*}\vspace{-3mm}
 \caption{Module strengthening operation -- $\Ostrengthen{l}{\iP}{\iM}$}
 \label{module:strengthen}
 
 \begin{align*}
-  \Osubst{\iC}{\iP}
-  &\to \Osubst{\iC}{\resolve{\E}{\iP}}\\
-  \Osubst{\iC}{\Ssig{\iS}}
-  &\to \Ssig{\Osubst{\iC}{\iS}}\\
-  \Osubst{\iC}{(\Swith{\iM}{\iC'})}
-  &\to \Osubst{\iC}{\Osubst{\iC'}{\iM}}\\
-  \Osubst{\iC}{(\Sfunctor{\ix}{\iM}{\iM'})}
+  \Oenrich{\iC}{\iP}
+  &\to \Oenrich{\iC}{\resolve{\E}{\iP}}\\
+  \Oenrich{\iC}{\Ssig{\iS}}
+  &\to \Ssig{\Oenrich{\iC}{\iS}}\\
+  \Oenrich{\iC}{(\Swith{\iM}{\iC'})}
+  &\to \Oenrich{\iC}{\Oenrich{\iC'}{\iM}}\\
+  \Oenrich{\iC}{(\Sfunctor{\ix}{\iM}{\iM'})}
   &\to \texttt{fail}\\
-  \Osubst{\iC}{\Salias{\iP}}
-  &\to \Salias{\iP} &\text{when } \Osubst{\iC}{\resolve{\E}{\iP}}\to \_\\
-  \Osubst{\iC}{\Stransp{\iM}{\iM'}}
-  &\to \Stransp{\Osubst{\iC}{\iM}}{\iM'}\\[4mm]
+  \Oenrich{\iC}{\Salias{\iP}}
+  &\to \Salias{\iP} &\text{when } \Oenrich{\iC}{\resolve{\E}{\iP}}\to \_\\
+  \Oenrich{\iC}{\Stransp{\iM}{\iM'}}
+  &\to \Stransp{\Oenrich{\iC}{\iM}}{\iM'}\\[4mm]
   %
-  \Osubst{t = \tau'}{\Stype{t}{\tau};\iS}
+  \Oenrich{t = \tau'}{\Stype{t}{\tau};\iS}
   &\to \Stype{t}{\tau'};\iS
   &\text{when } \subtyp{\E}{\tau'}{\tau}\\
-  \Osubst{\ix = \iP}{\Smodulety{\ix}{\iM};\iS}
+  \Oenrich{\ix = \iP}{\Smodulety{\ix}{\iM};\iS}
   &\to \Smodulety{\ix}{\Salias{\iP}};\iS
-  &\text{when } \submod{\E}{\Salias{\iP}}{\iM}\\
-  \Osubst{\ix.\ip.t = \tau}{\Smodulety{\ix}{\iM};\iS}
-  &\to \Smodulety{\ix}{\Osubst{\ip.t = \tau}{\iM}};\iS\\
-  \Osubst{\ix.\ip = \iP'}{\Smodulety{\ix}{\iM};\iS}
-  &\to \Smodulety{\ix}{\Osubst{\ip = \iP'}{\iM}};\iS\\
-  \Osubst{\iC}{(\iD;\iS)}
-  &\to \iD;\Osubst{\iC}{\iS}
+  &\text{when } \submod{\E}{\Salias{\iP}}{\iM}{\_}\\
+  \Oenrich{\ix.\ip.t = \tau}{\Smodulety{\ix}{\iM};\iS}
+  &\to \Smodulety{\ix}{\Senrich{\ip.t = \tau}{\iM}};\iS\\
+  \Oenrich{\ix.\ip = \iP'}{\Smodulety{\ix}{\iM};\iS}
+  &\to \Smodulety{\ix}{\Senrich{\ip = \iP'}{\iM}};\iS\\
+  \Oenrich{\iC}{(\iD;\iS)}
+  &\to \iD;\Oenrich{\iC}{\iS}
   &\text{when } id(\iD) \text{ is not a prefix of } id(\iC)\\[4mm]
   %
-  \Osubst{\iC}{(\Sstrengthen{l}{\ip}{\iM})}
-  &\to \Osubst{\iC}{(\Ostrengthen{l}{\ip}{\iM})}\\
-  \Osubst{\iC}{\Ssubst{\iC'}{\iM}}
-  &\to \Osubst{\iC}{\Osubst{\iC'}{\iM}}\\
+  \Oenrich{\iC}{(\Sstrengthen{l}{\ip}{\iM})}
+  &\to \Oenrich{\iC}{(\Ostrengthen{l}{\ip}{\iM})}\\
+  \Oenrich{\iC}{\Senrich{\iC'}{\iM}}
+  &\to \Oenrich{\iC}{\Oenrich{\iC'}{\iM}}\\
 \end{align*}\vspace{-3mm}
-\caption{Substitution operation -- $\Osubst{\iC}{\iM}$}
-\label{module:subst}
+\caption{Enrichment operation -- $\Oenrich{\iC}{\iM}$}
+\label{module:enrich}
 
 %%% Local Variables:
 %%% mode: latex

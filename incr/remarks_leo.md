@@ -1,5 +1,6 @@
 - Typo: strengthening for type definitions has missing "when t ∈ L"
   stuff.
+  # DONE
 
 - Strengthening for module definitions should produce module aliases
   rather than recursing into the submodules.  Similarly, strengthening
@@ -7,6 +8,7 @@
 
   This what OCaml does now and it gives stronger types than the
   alternative.
+  # DONE
 
 - It is not obvious to me why strengthening has to ignore paths involved
   in `with C` constructs. Could you explain why that is necessary?
@@ -17,12 +19,14 @@
     module X : M; S [X.P.t=τ] → module X : M with P.t=τ; S
 
   avoiding the need to recurse into submodules.
+  # DONE
 
 - I find it odd to have typing judgement side-conditions on the
   "substitution" operation. I would expect there to be validity
   judgement preventing the substitution from being applied when these
   conditions didn't hold, rather than the operation itself checking
   these conditions and being undefined if they don't hold.
+  # I agree, but the definition would be significantly longer, and repetitive.
 
 - You are using the "substitution" operation to do actual substitution
   of functor parameters. I do not think this works. I don't think trying
@@ -31,6 +35,7 @@
 
   I'd probably rename your "substitution" to something else. Maybe
   "enrichment"?
+  # You're right, I used your name and changed functors to use proper substitution. We will probably use explicit substitution here (ie., "let module X = (P :> S) in T").
 
 - The first case in the definition of the transparent ascription
   operation looks suspicious to me. The resolve operation removes module
@@ -54,9 +59,11 @@
   aliases with their strenghthening. The first one takes a module type
   path and gives you an equivalent module type, the second takes a
   module type path and gives you a weaker module type.
+  # Indeed, but I don't think we need two operations: we just need to try to handle the case where the right hand side is a module alias first, and then resolve if necessary.
 
 - Why the weird triangles instead of the turnstile on the judgements?
   Just curious.
+  # Avoid overlaping with the core type language, which usually use turnstyle. You  could argue that "it's clear from the context" ... but I like my math not to be written in python. :)
 
 - The rule for subtyping between signatures is missing a substitution
   it needs to be use something like D′ᵢ[Dπ(1), ..., Dπ(n) / D′₁, ..., D′ₙ]

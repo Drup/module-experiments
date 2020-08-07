@@ -63,7 +63,7 @@ Judgements:\\
   &The module $\im$ is of type $\iM$ in $\E$.
   See \cref{module:typing}.\\
 
-  $\submod{\E}{\iM}{\iM'}$&
+  $\submod{\E}{\iM}{\iM'}{\iM_r}$&
   The module type $\iM$ is a subtype of $\iM'$ in $\E$.
   See \cref{module:subtyping}.\\
 
@@ -76,7 +76,7 @@ Operations:\\
 \begin{tabular}{ll}
   $\Ostrengthen{l}{\iP}{\iM}$
   & Strenghten $\iM$ by $\iP$ while ignoring the list of module paths $l$.\\
-  $\Osubst{\iC}{\iM}$
+  $\Oenrich{\iC}{\iM}$
   & Applies the substitution $\iC$ in $\iM$.\\
   $\Otransp{\iM}{\iM'}$
   & Computes the transparent ascription of $\iM$ by $\iM'$.\\
@@ -113,7 +113,7 @@ Environment accesses:\\
 
 % \begin{figure}[hbt]
   \input{theory/subtyping}\vspace{-3mm}
-  \caption{Module subtyping rules -- $\submod{\E}{\iM}{\iM'}$}
+  \caption{Module subtyping rules -- $\submod{\E}{\iM}{\iM'}{\iM_r}$}
   \label{module:subtyping}
 \end{figure}
 
@@ -126,10 +126,10 @@ Environment accesses:\\
 % \begin{figure}[hbt]
   \begin{subfigure}[t]{0.3\linewidth}
     \begin{align*}
-      \Oforce{\E}{\Sstrengthen{l}{\iP}{\iM}}
-      &= \Oforce{\E}{\Ostrengthen{l}{\iP}{\iM}}\\
-      \Oforce{\E}{\Ssubst{\iC}{\iM}}
-      &= \Oforce{\E}{\Osubst{\iC}{\iM}}\\
+      \Oforce{\E}{\Sstrengthen{l}{\ip}{\iM}}
+      &= \Oforce{\E}{\Ostrengthen{l}{\ip}{\iM}}\\
+      \Oforce{\E}{\Senrich{\iC}{\iM}}
+      &= \Oforce{\E}{\Oenrich{\iC}{\iM}}\\
       \Oforce{\E}{\Stransp{\iM}{\iM'}}
       &= \Oforce{\E}{\Otransp{\iM}{\iM'}}\\
       \Oforce{\E}{\iMO} &= \iMO
@@ -137,20 +137,17 @@ Environment accesses:\\
   \end{subfigure}
   \begin{subfigure}[t]{0.33\linewidth}
     \begin{align*}
-      \resolve{\E}{\iP}
-      &= \Sstrengthen{}{\iP}{\resolve{\E}{\lookup{\E}{\iP}}}\\
-      \resolve{\E}{\Salias{\iP}}
-      &= \Sstrengthen{}{\iP}{\resolve{\E}{\lookup{\E}{\iP}}}\\
-      \resolve{\E}{\iMO} &= \iMO & \text{otherwise} \\
+      \resolve{\E}{\ip}
+      &= \Sstrengthen{}{\Onormalize{\E}{\ip}}{\lookup{\E}{\Onormalize{\E}{\ip}}}
     \end{align*}
   \end{subfigure}
   \begin{subfigure}[t]{0.33\linewidth}
     \begin{align*}
-      \Onormalize{\E}{\iP}
+      \Onormalize{\E}{\ip}
       &=
         \begin{dcases}
-          \Onormalize{\E}{\iP'} & \text{when } \lookup{\E}{\iP} = \Salias{\iP'} \\
-          \iP & \text{otherwise}
+          \Onormalize{\E}{\ip'} & \text{when } \lookup{\E}{\ip} = \Salias{\ip'} \\
+          \ip & \text{otherwise}
         \end{dcases}
     \end{align*}
   \end{subfigure}

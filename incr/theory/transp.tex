@@ -1,6 +1,10 @@
 \begin{align*}
-  \Otransp{\iM}{\iM'}
-  &\to \Otransp{\resolve{\E}{\iM}}{\resolve{\E}{\iM'}}\\
+  cas lookup\\
+  \Otransp{\Salias{\ip}}{\Salias{\ip'}}
+  &\to \Salias{\ip'}
+  \\
+  \Otransp{\Salias{\ip}}{\iM}
+  &\to \Otransp{\resolve{\E}{\ip}}{\iM}\\
   %
   \Otransp{\Ssig{\iD_1;\dots;\iD_n}}{\Ssig{\iD'_1;\dots;\iD'_m}}
   &\to \Ssig{\Otransp{\iD_{\pi(i)}}{\iD_i}}
@@ -9,7 +13,6 @@
   %
   \Otransp{(\Sval{x_i}{\tau})}{(\Sval{x_i}{\tau'})}
   &\to (\Sval{x_i}{\tau})
-  & \text{when } \subtyp{\E}{\tau}{\tau'}
   \\
   \Otransp{(\Sval{x_i}{\tau})}{\Sempty}
   &\to \Sempty
@@ -25,7 +28,6 @@
   \\
   \Otransp{(\Stype{t_i}{\tau})}{(\Stype{t_i}{\tau'})}
   &\to (\Stype{t_i}{\tau})
-  & \text{when } \subtyp{\E}{\tau}{\tau'}
   \\
   \Otransp{(\Stype{t_i}{\tau})}{\Sempty}
   &\to (\Stype{t_i}{\tau})
@@ -35,7 +37,6 @@
   \\
   \Otransp{(\Stypeabs{t_i})}{(\Stype{t_i}{\tau'})}
   &\to (\Stype{t_i}{\tau'})
-  & \text{when } \subtyp{\E}{t}{\tau'}
   \\
   \Otransp{(\Stypeabs{t_i})}{\Sempty}
   &\to (\Stypeabs{t_i})\\
