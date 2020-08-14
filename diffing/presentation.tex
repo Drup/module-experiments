@@ -28,7 +28,7 @@
   {\nolinkurl{gabriel.radanne@inria.fr}}
   \end{columns}
   }{F. Angeletti \& G. Radanne}}
-\date{}
+\date{Thursday 27th August}
 \begin{document}
 \begin{frame}
 \maketitle
@@ -95,7 +95,7 @@ module F: f =
 
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{A more typical example}
+\begin{frame}[fragile]\frametitle{A typical example}
 A common example of functors
 \begin{minted}{ocaml}
 module type XT = sig type x end
@@ -165,8 +165,7 @@ module R = F(X)(X)(Y)(Z)
 \end{minted}
 
   \begin{itemize}
-      \item For error message, take back some height and look at the whole
-      multi-application
+      \item For error message, we should look at the whole multi-application
 \begin{minted}{ocaml}
 module R = F(X)(X)(Y)(Z)
 \end{minted}
