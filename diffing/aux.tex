@@ -1,0 +1,19 @@
+
+\begin{frame}[fragile]\frametitle{Here be dragons}
+
+  Complex error messages are fine with code like
+\begin{minted}{ocaml}
+module Ty = struct module type T = sig module type T end end
+module Pred (X: Ty) = struct
+  module type T = A.T -> Type
+end
+module Eq (A : Ty) (X : A.T) (Y : A.T) = struct
+  module type T = functor (P : Pred(A).T) (_ : P(X).T) -> P(Y).T
+end
+module EqSymm (A : Ty) (X : A.T) (Y : A.T)
+              (EqXY : Eq(A)(X)(Y).T) : Eq(A)(Y)(X).T =
+end
+\end{minted}
+
+
+\end{frame}
