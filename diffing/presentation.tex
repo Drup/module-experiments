@@ -1,10 +1,10 @@
-\documentclass[a4paper,11pt]{beamer}
+\documentclass[11pt,aspectratio=169]{beamer}
 \usepackage{minted}
 \usepackage{alltt}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 \usepackage{xspace}
-\usetheme{Boadilla}
+\usetheme[sectionpage=none]{metropolis}
 \usepackage[scaled=0.8]{DejaVuSansMono} % A decent mono font
 %\usepackage{enumitem}
 %\setitemize{noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
@@ -12,7 +12,7 @@
 
 
 \newcommand{\error}[1]{\textcolor{red}{#1}}
-\newcommand{\ok}[1]{\textcolor{OliveGreen}{#1}}
+\newcommand{\ok}[1]{\textcolor{green}{#1}}
 
 \title[Functor diffing]{High-level error messages for modules through diffing}
 \author[Angeletti \& Radanne]{\texorpdfstring{
@@ -28,7 +28,7 @@
   {\nolinkurl{gabriel.radanne@inria.fr}}
   \end{columns}
   }{F. Angeletti \& G. Radanne}}
-\date{Thursday 27th August}
+\date{}
 \begin{document}
 \begin{frame}
 \maketitle
@@ -36,17 +36,17 @@
 
 \section{Module errors}
 
-\begin{frame}
-  \structure{In ML languages, error messages for type error at the module level
-    are notoriously hard to read}.
-\end{frame}
+%\begin{frame}
+%  \structure{In ML languages, error messages for type error at the module level
+%    are notoriously hard to read}.
+%\end{frame}
 
-\begin{frame}[fragile]\frametitle{}
+\begin{frame}[fragile,t]\frametitle{}
 
 \begin{minted}{ocaml}
-module M =  module String_map = Map.Make(String)(String)
+module String_map = Map.Make(String)(String)
 \end{minted}
-
+\begin{onlyenv}<2>
 \begin{alltt}
 \error{Error}: This module is not a functor; it has type
        sig
@@ -58,10 +58,22 @@ module M =  module String_map = Map.Make(String)(String)
          val add : key -> 'a -> 'a t -> 'a t
          val update : key -> ('a option -> 'a option) -> 'a t -> 'a t
          val singleton : key -> 'a -> 'a t
-         val remove : key -> 'a t -> 'a t
          ...
        end
 \end{alltt}
+\end{onlyenv}
+
+\begin{onlyenv}<3>
+\begin{alltt}\error{Error}: The functor application is ill-typed.
+       These arguments:
+         \ok{String} \error{String}
+       do not match these parameters:
+         functor (Ord : \ok{Map.OrderedType})  -> ...
+  \ok{1.} Module String matches the expected module type Map.OrderedType
+  \error{2.} The following extra argument is provided
+         String : ...
+\end{alltt}
+\end{onlyenv}
 
 \end{frame}
 
@@ -69,16 +81,17 @@ module M =  module String_map = Map.Make(String)(String)
 \begin{frame}\frametitle{Modules: theory vs practice}
 \begin{description}
 \item[Theory:]{Most complex part of the language}
-\item[Practice:]{Shallow hierarchy of submodules, a handful of functors with few arguments, some module types}
+\item[Practice:]{Shallow hierarchy of submodules, a handful of functors with few arguments}
 \end{description}
 
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{A typical example}
-A common example of functors
+A common example of functors (such as Ocamlgraph)
 \begin{minted}{ocaml}
 module Graph(Vertex:VERTEX)(Edge:EDGE) = struct ... end
 \end{minted}
+
 
 \end{frame}
 
@@ -97,7 +110,7 @@ module G = Graph(Edge)
       }
     \item{Wrong argument:
 \begin{minted}{ocaml}
-module G = G(Label)(Edge)
+module G = Graph(Label)(Edge)
 \end{minted}
       }
 \end{itemize}
@@ -132,44 +145,21 @@ module G = Graph(Label)(Vertex)(Edge)
 \section{Diffing higher level error}
 
 
-\begin{frame}[fragile]\frametitle{Going higher}
+\begin{frame}[fragile]\frametitle{A little bit of perspective}
 
-  By typechecking argument by argument, we lose the multi-application
-  context:
-\begin{minted}{ocaml}
-module G = Graph(Label)(Vertex)(Edge)
-\end{minted}
+  For errors, we need to keep the \emph{multi-application} context
 
-  \begin{itemize}
-      \item For error message, we should look at the whole multi-application
-\begin{minted}{ocaml}
-module G = Graph(Label)(Vertex)(Edge)
-\end{minted}
-
-  \end{itemize}
-Try to match
+Consider the arguments as two lists:
 \begin{minted}{ocaml}
  Graph(Label)(Vertex)(Edge)
 \end{minted}
-with the list
 \begin{minted}{ocaml}
  module Graph(Vertex:VERTEX)(Edge:EDGE) = ...
 \end{minted}
 
-using the minimal number of addition, deletion, or modification on both side.
+use diffing between lists or strings: addition, deletion, or modification.
 
 \end{frame}
-
-\begin{frame}\frametitle{Edit distance optimization}
-  \structure{Dynamically-sized variant of the Wagner-Fischer algorithm for computing edit distance}
-  \begin{itemize}
-    \item{Argument comparison: OCaml typechecker comparison used as a black box}
-    \item{Complexity: $O(\max(\mathrm{|arguments|,|parameters|})^2)$}
-    \item{implemented as a patch on the OCaml compiler:
-      https://github.com/ocaml/ocaml/pull/9331 }
-  \end{itemize}
-\end{frame}
-
 
 \begin{frame}[fragile]\frametitle{Unnecessary argument}
 \begin{minted}{ocaml}
@@ -217,28 +207,57 @@ module G=Graph(Label)(Edge)
        Label : sig type t = string end
      is not included in
        VERTEX
-     The value `compare' is required but not provided
-     The value `hash' is required but not provided
-     The value `equal' is required but not provided
-     The type `label' is required but not provided
-     The value `create' is required but not provided
-     The value `label/2' is required but not provided
+     (elided for the slide)
   {\color{green}{}2.} Module Edge matches the expected module type EDGE
 
 \end{alltt}
 \end{frame}
 
-\section{Complex examples}
+\begin{frame}[standout]
+  \centering \Huge How does this work?
+\end{frame}
+\begin{frame}\frametitle{String diffing}
+\begin{block}{}
+  Operation seen this far: Addition, Deletion, Change
+\end{block}
+\begin{block}{}
+   Those are classical errors in string diffing
+ \end{block}
+ \begin{block}{}String diffing is everywhere:
+   spellchecking, fuzzy search, control version, DNA sequence matching, ...
+ \end{block}
 
-\begin{frame}
-  \structure{Does this scale?}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Mixed errors}
-  \structure{When mixing different type of errors?}
+\begin{frame}\frametitle{String diffing -- details}
+  Typical operations:
+  \begin{itemize}
+    \item \textbf<2->{Addition}: A B \ok{\underline{C}} D
+    \item \textbf<2->{Deletion}: A B \error{{C}} D
+    \item \textbf<2->{Change}: A B \error{X} D
+    \item Swap: A B $\underset{\leftrightarrow}{C D}$
+  \end{itemize}
+  Well-studied topic:
+  \begin{itemize}
+    \item many distances: \textbf<3>{Levenstein}, LCS, Hamming, ...
+      \item many algorithm: \textbf<3>{Wagner-Fischer}, Myer diff, Hirschberg's algorithm, ...
+  \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Mixed errors}
+
+\begin{frame}\frametitle{Our choice}
+  \structure{Dynamically-sized variant of the Wagner-Fischer algorithm for
+    computing distance with addition-deletion-change}
+  \begin{itemize}
+    \item{Argument comparison: OCaml typechecker comparison used as a black box}
+    \item{Complexity: $O(\max(\mathrm{|arguments|,|parameters|})^2)$}
+    \item{implemented as a patch on the OCaml compiler:
+      \url{https://github.com/ocaml/ocaml/pull/9331} }
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]\frametitle{Unreasonably complicated error}
 \begin{minted}{ocaml}
 module A = Seq module A' = Complex
 module B = Option module B' = Bigarray
@@ -249,7 +268,7 @@ module F = Bytes module F' = Map.Make
 module G = String
 \end{minted}
 \end{frame}
-\begin{frame}[fragile]\frametitle{Mixed errors}
+\begin{frame}[fragile]\frametitle{Unreasonably complicated error}
 \begin{minted}{ocaml}
 module Little_functor =
     (A: module type of A) (B: module type of B)
@@ -260,10 +279,11 @@ module Little_functor =
 \end{minted}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Mixed errors}
+\begin{frame}[fragile]\frametitle{Unreasonably complicated error}
 \begin{minted}{ocaml}
 module E = Little(A)(A)(B)(C')(E)(F')(G)(H)(H)
 \end{minted}
+  \footnotesize
 \begin{alltt}
 These arguments:
   {\color{green}{}A} {\color{red}{}\bfseries{}A} {\color{green}{}B} {\color{magenta}{}\bfseries{}C'} {\color{red}{}\bfseries{}} {\color{green}{}E} {\color{magenta}{}\bfseries{}F'} {\color{green}{}G} {\color{green}{}H} {\color{red}{}\bfseries{}H'}
@@ -283,12 +303,9 @@ do not match these parameters:
 \end{alltt}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Dependent functors}
-  \structure{With dependent functors?}
-\end{frame}
 
 
-\begin{frame}[fragile]\frametitle{Dependent functors}
+\begin{frame}[fragile]\frametitle{Dependent functors?}
 \begin{minted}{ocaml}
 module type f =
   functor
@@ -304,7 +321,7 @@ module F: f =
 \end{minted}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Dependent functors}
+\begin{frame}[fragile]\frametitle{Dependent functors?}
 \begin{alltt}
 {\bfseries{}\color{red}{}Error}: Signature mismatch:
        Modules do not match:
@@ -318,14 +335,9 @@ module F: f =
 \end{alltt}
 \end{frame}
 
-
-\begin{frame}[fragile]\frametitle{Variadic functors}
-  \structure{In the exotic corners of the module system?}
-\end{frame}
-
-\begin{frame}[fragile]\frametitle{Variadic functors}
-  \structure{Not all functors have a well-defined arity}
- \begin{minted}{ocaml}
+\begin{frame}[fragile]\frametitle{Dynamically-sized?}
+  Functors are complicated, they can be variadic in OCaml:
+   \begin{minted}{ocaml}
  module F(X:sig
    module type t
    module M:t
@@ -335,34 +347,31 @@ module F: f =
    module type t = module type of F
  end
 \end{minted}
-\end{frame}
 
-\begin{frame}[fragile]
 \begin{minted}{ocaml}
- module R = F(Ft)(Ft)(Ft)(Ft)(F)
+F(Ft)(Ft)(Ft)(Ft)...
 \end{minted}
-\begin{alltt}
-     These arguments:
-       {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{magenta}{}\bfseries{}F}
-     do not match these parameters:
-       functor {\color{green}{}(X : ...)} {\color{green}{}(X : ...)} {\color{green}{}(X : ...)} {\color{green}{}(X : ...)} {\color{magenta}{}\bfseries{}(X : ...(X))} -> ...
-{\color{green}{}1.} Module Ft matches the expected module type
-{\color{green}{}2.} Module Ft matches the expected module type
-{\color{green}{}3.} Module Ft matches the expected module type
-{\color{green}{}4.} Module Ft matches the expected module type
-{\color{magenta}{}\bfseries{}5.} Modules do not match:
-     F : functor (X : sig module type t module M : t end) -> X.t
-   is not included in
-     ...(X) = sig module type t module M : t end
-   Modules do not match:
-     functor {\color{red}{}\bfseries{}(X : ...(X))} -> ...
-   is not included in
-     functor {\color{red}{}\bfseries{}} -> ...
-      An extra argument is provided of module type
-          ...(X) = sig module type t module M : t end
 
-\end{alltt}
+  Our modified Wagner-Fischer handles those cases (and yet always terminates).
 \end{frame}
+
+\begin{frame}[fragile]\frametitle{What about swaps?}
+  Hard to present well in text output.
+
+  We are considering a subcase where all arguments are here:
+\begin{minted}{ocaml}
+  Graph(Edge)(Vertex)
+\end{minted}
+\end{frame}
+
+
+
+\section{Complex examples}
+
+\begin{frame}[standout]
+  \centering \Huge Does this scale?
+\end{frame}
+
 
 \begin{frame}[fragile] \frametitle{A question of performances?}
   \begin{itemize}
@@ -440,31 +449,40 @@ do not match these parameters: ...
 \end{alltt}
 
 \end{frame}
-\begin{frame}
-  Visibly not.
-  \begin{itemize}
-    \item non-optimized implementation of the edit-distance
-    \item variadic functors are a worse case
-  \end{itemize}
+
+\begin{frame}\frametitle{Bounty}
+  If you have existing code (before the 27 August 2020), with functors with more
+  than ten arguments, we are offering a bounty of one drink.%
+  \footnote{Mirage-generated code does not count}
 \end{frame}
 
 
 \section{Future works}
 
-\begin{frame}\frametitle{Future works}
+\begin{frame}\frametitle{Conclusion and future works}
+  \begin{block}{Take-away}
+    \begin{itemize}
+      \item Diffing for functor application and inclusion
+      \item non-optimized implementation of the Wagner-Fischer
+  \end{itemize}
+\end{block}
+
+\begin{block}{Future works}
   \begin{itemize}
+
     \item Signature difference
       \begin{itemize}
         \item ground work is already implemented
         \item The user interface needs to be written.
       \end{itemize}
-    \item Moving to types:
-      \begin{itemize}
-        \item objects are quite similar
-      \end{itemize}
-    \item Tying everything together
+    \item Moving to other structural types (in OCaml: objects, polymorphic variants)
+    \item Tying everything together (tree diffing)
   \end{itemize}
+\end{block}
+\end{frame}
 
+\begin{frame}[standout]
+  \centering \Huge The End
 \end{frame}
 
 
