@@ -44,44 +44,23 @@
 \begin{frame}[fragile]\frametitle{}
 
 \begin{minted}{ocaml}
-module type f =
-  functor
-    (B:sig type x type y type u=x type v=y end)
-    (Y:sig type yu = Y of B.u end)
-    (Z:sig type zv = Z of B.v end)
-   -> sig end
-module F: f =
-  functor
-    (X:sig type x type y end)
-    (Z:sig type zv = Z of X.y end)
-   -> struct end
+module M =  module String_map = Map.Make(String)(String)
 \end{minted}
 
-\end{frame}
-
-\begin{frame}[fragile]\frametitle{When errors grow}
-
-\begin{alltt}\error{Error}: Signature mismatch:
-       Modules do not match:
-         functor (X : sig type x type y end) (Z : sig type zv = Z of X.y end)
-           -> sig end
-       is not included in
-         f
-       At position functor (X) -> <here>
-       Modules do not match:
-         functor (Z : sig type zv = Z of X.y end) -> sig end
-       is not included in
-         functor (Y : sig type yu = Y of X.x end)
-           (Z : sig type zv = Z of X.y end) -> sig end
-\end{alltt}
-
-\end{frame}
-
-\begin{frame}[fragile]\frametitle{When errors grow}
-
 \begin{alltt}
-       At position functor (X) -> functor (Z : <here>) -> ...
-       The type `zv' is required but not provided
+\error{Error}: This module is not a functor; it has type
+       sig
+         type key = String.t
+         type 'a t = 'a Map.Make(String).t
+         val empty : 'a t
+         val is_empty : 'a t -> bool
+         val mem : key -> 'a t -> bool
+         val add : key -> 'a -> 'a t -> 'a t
+         val update : key -> ('a option -> 'a option) -> 'a t -> 'a t
+         val singleton : key -> 'a -> 'a t
+         val remove : key -> 'a t -> 'a t
+         ...
+       end
 \end{alltt}
 
 \end{frame}
@@ -90,7 +69,7 @@ module F: f =
 \begin{frame}\frametitle{Modules: theory vs practice}
 \begin{description}
 \item[Theory:]{Most complex part of the language}
-\item[Practice:]{Shallow hierarchy of submodules, a handful of functors with few arguments, few module types}
+\item[Practice:]{Shallow hierarchy of submodules, a handful of functors with few arguments, some module types}
 \end{description}
 
 \end{frame}
@@ -98,15 +77,7 @@ module F: f =
 \begin{frame}[fragile]\frametitle{A typical example}
 A common example of functors
 \begin{minted}{ocaml}
-module type XT = sig type x end
-module type YT = sig type y end
-module type ZT = sig type z end
-module F(X:XT)(Y:YT)(Z:ZT)
-= struct ... end
-module X = struct type x = A end
-module Y = struct type y = B end
-module Y' = struct type y' = B end
-module Z = struct type z = C end
+module Graph(Vertex:VERTEX)(Edge:EDGE) = struct ... end
 \end{minted}
 
 \end{frame}
@@ -116,22 +87,22 @@ module Z = struct type z = C end
   \begin{itemize}
     \item{Unnecessary argument
 \begin{minted}{ocaml}
-module R = F(X)(X)(Y)(Z)
+module G = Graph(Label)(Vertex)(Edge)
 \end{minted}
       }
     \item{Forgotten argument:
 \begin{minted}{ocaml}
-module R = F(X)(Z)
+module G = Graph(Edge)
 \end{minted}
       }
     \item{Wrong argument:
 \begin{minted}{ocaml}
-module R = F(X)(Y')(Z)
+module G = G(Label)(Edge)
 \end{minted}
       }
 \end{itemize}
 
-All those errors are frequent during the refactoring.
+All those errors are frequent during refactorings.
 
 \end{frame}
 
@@ -139,16 +110,21 @@ All those errors are frequent during the refactoring.
 Classical error messages consider only the last alternative:
 
 \begin{minted}{ocaml}
-module R = F(X)(X)(Y)(Z)
+module G = Graph(Label)(Vertex)(Edge)
 \end{minted}
 
 \begin{alltt}
 \error{Error}: Signature mismatch:
        Modules do not match:
-         sig type x = X.x = A end
+         sig type t = string end
        is not included in
-         sig type y = B end
-       The type `y' is required but not provided
+         VERTEX
+       The value `label' is required but not provided
+       The value `create' is required but not provided
+       The type `label' is required but not provided
+       The value `equal' is required but not provided
+       The value `hash' is required but not provided
+       The value `compare' is required but not provided
  \end{alltt}
 \end{frame}
 
@@ -161,82 +137,105 @@ module R = F(X)(X)(Y)(Z)
   By typechecking argument by argument, we lose the multi-application
   context:
 \begin{minted}{ocaml}
-module R = F(X)(X)(Y)(Z)
+module G = Graph(Label)(Vertex)(Edge)
 \end{minted}
 
   \begin{itemize}
       \item For error message, we should look at the whole multi-application
 \begin{minted}{ocaml}
-module R = F(X)(X)(Y)(Z)
+module G = Graph(Label)(Vertex)(Edge)
 \end{minted}
 
   \end{itemize}
 Try to match
 \begin{minted}{ocaml}
- F(X)(X)(Y)(Z)
+ Graph(Label)(Vertex)(Edge)
 \end{minted}
 with the list
 \begin{minted}{ocaml}
- module F(X:XT)(Y:YT)(Z:ZT) = ...
+ module Graph(Vertex:VERTEX)(Edge:EDGE) = ...
 \end{minted}
 
 using the minimal number of addition, deletion, or modification on both side.
 
 \end{frame}
 
+\begin{frame}\frametitle{Edit distance optimization}
+  \structure{Dynamically-sized variant of the Wagner-Fischer algorithm for computing edit distance}
+  \begin{itemize}
+    \item{Argument comparison: OCaml typechecker comparison used as a black box}
+    \item{Complexity: $O(\max(\mathrm{|arguments|,|parameters|})^2)$}
+    \item{implemented as a patch on the OCaml compiler:
+      https://github.com/ocaml/ocaml/pull/9331 }
+  \end{itemize}
+\end{frame}
+
 
 \begin{frame}[fragile]\frametitle{Unnecessary argument}
 \begin{minted}{ocaml}
-module R=F(X)(X)(Y)(Z)
+module G=Graph(Label)(Vertex)(Edge)
 \end{minted}
 \begin{alltt}
 {\bfseries{}\color{red}{}Error}: The functor application is ill-typed.
        These arguments:
-         {\color{green}{}X} {\color{red}{}\bfseries{}X} {\color{green}{}Y} {\color{green}{}Z}
+         {\color{red}{}\bfseries{}Label} {\color{green}{}Vertex} {\color{green}{}Edge}
        do not match these parameters:
-         functor {\color{green}{}(X : XT)} {\color{red}{}\bfseries{}} {\color{green}{}(Y : YT)} {\color{green}{}(Z : ZT)} -> ...
-  {\color{green}{}1.} Module X matches the expected module type XT
-  {\color{red}{}\bfseries{}2.} The following extra argument is provided
-     X : sig type x = X.x = A end
-  {\color{green}{}3.} Module Y matches the expected module type YT
-  {\color{green}{}4.} Module Z matches the expected module type ZT
+         functor {\color{red}{}\bfseries{}} {\color{green}{}(Vertex : VERTEX)} {\color{green}{}(Edge : EDGE)} -> ...
+  {\color{red}{}\bfseries{}1.} The following extra argument is provided
+      Label : sig type t = string end
+  {\color{green}{}2.} Module Vertex matches the expected module type VERTEX
+  {\color{green}{}3.} Module Edge matches the expected module type EDGE
 \end{alltt}
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Missing argument}
 \begin{minted}{ocaml}
-module R=F(X)(Z)
+module G=Graph(Edge)
 \end{minted}
 \begin{alltt}
 {\bfseries{}\color{red}{}Error}: The functor application is ill-typed.
        These arguments:
-         {\color{green}{}X} {\color{red}{}\bfseries{}} {\color{green}{}Z}
+         {\color{red}{}\bfseries{}} {\color{green}{}Edge}
        do not match these parameters:
-         functor {\color{green}{}(X : XT)} {\color{red}{}\bfseries{}(Y : YT)} {\color{green}{}(Z : ZT)} -> ...
-  {\color{green}{}1.} Module X matches the expected module type XT
-  {\color{red}{}\bfseries{}2.} An argument appears to be missing with module type YT
-  {\color{green}{}3.} Module Z matches the expected module type ZT
+         functor {\color{red}{}\bfseries{}(Vertex : VERTEX)} {\color{green}{}(Edge : EDGE)} -> ...
+  {\color{red}{}\bfseries{}1.} An argument appears to be missing with module type VERTEX
+  {\color{green}{}2.} Module Edge matches the expected module type EDGE
 \end{alltt}
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Wrong argument}
 \begin{minted}{ocaml}
-module R=F(X)(Y')(Z)
+module G=Graph(Label)(Edge)
 \end{minted}
 \begin{alltt}
 {\bfseries{}\color{red}{}Error}: The functor application is ill-typed.
        These arguments:
-         {\color{green}{}X} {\color{magenta}{}\bfseries{}Y'} {\color{green}{}Z}
+         {\color{magenta}{}\bfseries{}Label} {\color{green}{}Edge}
        do not match these parameters:
-         functor {\color{green}{}(X : XT)} {\color{magenta}{}\bfseries{}(Y : YT)} {\color{green}{}(Z : ZT)} -> ...
-  {\color{green}{}1.} Module X matches the expected module type XT
-  {\color{magenta}{}\bfseries{}2.} Modules do not match:
-       Y' : sig type y' = Y'.y' = B end
+         functor {\color{magenta}{}\bfseries{}(Vertex : VERTEX)} {\color{green}{}(Edge : EDGE)} -> ...
+  {\color{magenta}{}\bfseries{}1.} Modules do not match:
+       Label : sig type t = string end
      is not included in
-       YT
-     The type `y' is required but not provided
-  {\color{green}{}3.} Module Z matches the expected module type ZT
+       VERTEX
+     The value `compare' is required but not provided
+     The value `hash' is required but not provided
+     The value `equal' is required but not provided
+     The type `label' is required but not provided
+     The value `create' is required but not provided
+     The value `label/2' is required but not provided
+  {\color{green}{}2.} Module Edge matches the expected module type EDGE
+
 \end{alltt}
+\end{frame}
+
+\section{Complex examples}
+
+\begin{frame}
+  \structure{Does this scale?}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Mixed errors}
+  \structure{When mixing different type of errors?}
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Mixed errors}
@@ -277,25 +276,12 @@ do not match these parameters:
 \end{alltt}
 \end{frame}
 
-
-\begin{frame}\frametitle{Edit distance optimization}
-  \structure{Dynamically-sized variant of the Wagner-Fischer algorithm for computing edit distance}
-  \begin{itemize}
-    \item{Argument comparison: OCaml typechecker comparison used as a black box}
-    \item{Complexity: $O(\max(\mathrm{|arguments|,|parameters|})^2)$}
-    \item{implemented as a patch on the OCaml compiler:
-      https://github.com/ocaml/ocaml/pull/9331 }
-  \end{itemize}
+\begin{frame}[fragile]\frametitle{Dependent functors}
+  \structure{With dependent functors?}
 \end{frame}
 
 
-\section{Complex examples}
-
-\begin{frame}
-  \structure{Does this scale?}
-\end{frame}
-
-\begin{frame}[fragile]\frametitle{Opening example}
+\begin{frame}[fragile]\frametitle{Dependent functors}
 \begin{minted}{ocaml}
 module type f =
   functor
@@ -311,7 +297,7 @@ module F: f =
 \end{minted}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Opening example}
+\begin{frame}[fragile]\frametitle{Dependent functors}
 \begin{alltt}
 {\bfseries{}\color{red}{}Error}: Signature mismatch:
        Modules do not match:
@@ -325,6 +311,10 @@ module F: f =
 \end{alltt}
 \end{frame}
 
+
+\begin{frame}[fragile]\frametitle{Variadic functors}
+  \structure{In the exotic corners of the module system?}
+\end{frame}
 
 \begin{frame}[fragile]\frametitle{Variadic functors}
   \structure{Not all functors have a well-defined arity}
