@@ -4,11 +4,18 @@
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 \usepackage{xspace}
+\usepackage{cancel}
+
 \usetheme[sectionpage=none]{metropolis}
 \usepackage[scaled=0.8]{DejaVuSansMono} % A decent mono font
 %\usepackage{enumitem}
 %\setitemize{noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
 %\setenumerate{noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
+
+
+
+\definecolor{green}{rgb}{0, 0.5, 0.1}
+\definecolor{magenta}{rgb}{1, 0, 0}
 
 
 \newcommand{\error}[1]{\textcolor{red}{#1}}
@@ -58,7 +65,7 @@ module String_map = Map.Make(String)(String)
          val add : key -> 'a -> 'a t -> 'a t
          val update : key -> ('a option -> 'a option) -> 'a t -> 'a t
          val singleton : key -> 'a -> 'a t
-         ...
+        \dots(elided for the slide)
        end
 \end{alltt}
 \end{onlyenv}
@@ -71,7 +78,7 @@ module String_map = Map.Make(String)(String)
          functor (Ord : \ok{Map.OrderedType})  -> ...
   \ok{1.} Module String matches the expected module type Map.OrderedType
   \error{2.} The following extra argument is provided
-         String : ...
+         String : \dots(elided)
 \end{alltt}
 \end{onlyenv}
 
@@ -207,7 +214,7 @@ module G=Graph(Label)(Edge)
        Label : sig type t = string end
      is not included in
        VERTEX
-     (elided for the slide)
+     \dots(elided for the slide)
   {\color{green}{}2.} Module Edge matches the expected module type EDGE
 
 \end{alltt}
@@ -218,7 +225,7 @@ module G=Graph(Label)(Edge)
 \end{frame}
 \begin{frame}\frametitle{String diffing}
 \begin{block}{}
-  Operation seen this far: Addition, Deletion, Change
+  Error classes seen this far: Addition, Deletion, Change
 \end{block}
 \begin{block}{}
    Those are classical errors in string diffing
@@ -233,17 +240,20 @@ module G=Graph(Label)(Edge)
   Typical operations:
   \begin{itemize}
     \item \textbf<2->{Addition}: A B \ok{\underline{C}} D
-    \item \textbf<2->{Deletion}: A B \error{{C}} D
-    \item \textbf<2->{Change}: A B \error{X} D
-    \item Swap: A B $\underset{\leftrightarrow}{C D}$
+    \item \textbf<2->{Deletion}: A B \error{$\xcancel{C}$} D
+    \item \textbf<2->{Change}: A B $\cancelto{\ok{C}}{\error{F}}$ D
+    \item Swap: A B $\underset{\leftrightarrow}{C\ D}$
   \end{itemize}
   Well-studied topic:
   \begin{itemize}
     \item many distances: \textbf<3>{Levenstein}, LCS, Hamming, ...
-      \item many algorithm: \textbf<3>{Wagner-Fischer}, Myer diff, Hirschberg's algorithm, ...
+     \item many algorithms: \textbf<3>{Wagner-Fischer}, Myers diff, Hirschberg's algorithm, ...
   \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]\frametitle{Wagner-Fischer illustrated}
+   \centering \includegraphics{matrix.pdf}
+\end{frame}
 
 \begin{frame}\frametitle{Our choice}
   \structure{Dynamically-sized variant of the Wagner-Fischer algorithm for
@@ -281,7 +291,7 @@ module Little_functor =
 
 \begin{frame}[fragile]\frametitle{Unreasonably complicated error}
 \begin{minted}{ocaml}
-module E = Little(A)(A)(B)(C')(E)(F')(G)(H)(H)
+module E = Little_functor(A)(A)(B)(C')(E)(F')(G)(H)(H)
 \end{minted}
   \footnotesize
 \begin{alltt}
@@ -291,15 +301,15 @@ do not match these parameters:
   functor {\color{green}{}(A : ...)} {\color{red}{}\bfseries{}} {\color{green}{}(B : ...)} {\color{magenta}{}\bfseries{}(C : ...(C))} {\color{red}{}\bfseries{}(D : ...(D))} {\color{green}{}(E : ...)}
   {\color{magenta}{}\bfseries{}(F : ...(F))} {\color{green}{}(G : ...)} {\color{green}{}(H : ...)} {\color{red}{}\bfseries{}} -> ...
 {\color{green}{}1.} Module A matches the expected module type
-{\color{red}{}\bfseries{}2.} The following extra argument is provided: ...
+{\color{red}{}\bfseries{}2.} The following extra argument is provided: \dots(elided)
 {\color{green}{}3.} Module B matches the expected module type
-{\color{magenta}{}\bfseries{}4.} Modules do not match: C' :
-{\color{red}{}\bfseries{}5.} An argument appears to be missing ...
+{\color{magenta}{}\bfseries{}4.} Modules do not match: C' : \dots(elided)
+{\color{red}{}\bfseries{}5.} An argument appears to be missing \dots(elided)
 {\color{green}{}6.} Module E matches the expected module type
-{\color{magenta}{}\bfseries{}7.} Modules do not match: F' ...
+{\color{magenta}{}\bfseries{}7.} Modules do not match: F' \dots(elided)
 {\color{green}{}8.} Module G matches the expected module type
 {\color{green}{}9.} Module H matches the expected module type
-{\color{red}{}\bfseries{}10.} The following extra argument is provide H' : ...
+{\color{red}{}\bfseries{}10.} The following extra argument is provided H' : \dots(elided)
 \end{alltt}
 \end{frame}
 
@@ -352,13 +362,13 @@ module F: f =
 F(Ft)(Ft)(Ft)(Ft)...
 \end{minted}
 
-  Our modified Wagner-Fischer handles those cases (and yet always terminates).
+  Our modified Wagner-Fischer algorithm handles those cases (and yet always terminates).
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{What about swaps?}
   Hard to present well in text output.
 
-  We are considering a subcase where all arguments are here:
+  We may consider a subcase where all arguments are here:
 \begin{minted}{ocaml}
   Graph(Edge)(Vertex)
 \end{minted}
@@ -375,7 +385,7 @@ F(Ft)(Ft)(Ft)(Ft)...
 
 \begin{frame}[fragile] \frametitle{A question of performances?}
   \begin{itemize}
-    \item{Quadractic module comparisons}
+    \item{Quadratic module comparisons}
     \item{Errors are for human. Human are slow.}
     \item{Which effect matters?}
   \end{itemize}
@@ -445,7 +455,7 @@ These arguments:
   {\color{red}{}\bfseries{}Bigarray} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
   {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
   {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-do not match these parameters: ...
+do not match these parameters: \dots(elided)
 \end{alltt}
 
 \end{frame}
