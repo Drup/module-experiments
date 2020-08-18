@@ -164,7 +164,7 @@ Consider the arguments as two lists:
  module Graph(Vertex:VERTEX)(Edge:EDGE) = ...
 \end{minted}
 
-use diffing between lists or strings: addition, deletion, or modification.
+use diffing between lists or strings: addition, deletion, or change.
 
 \end{frame}
 
@@ -242,7 +242,7 @@ module G=Graph(Label)(Edge)
     \item \textbf<2->{Addition}: A B \ok{\underline{C}} D
     \item \textbf<2->{Deletion}: A B \error{$\xcancel{C}$} D
     \item \textbf<2->{Change}: A B $\cancelto{\ok{C}}{\error{F}}$ D
-    \item Swap: A B $\underset{\leftrightarrow}{C\ D}$
+    \item Swap: A B $\underset{\longleftrightarrow}{C\ D}$
   \end{itemize}
   Well-studied topic:
   \begin{itemize}
@@ -275,7 +275,8 @@ module C = Result module C' = Bool
 module D = Char module D' = Uchar
 module E = Sys module E' = List
 module F = Bytes module F' = Map.Make
-module G = String
+module G = String module G' = Unit
+module H = Marshal module H' = Obj
 \end{minted}
 \end{frame}
 \begin{frame}[fragile]\frametitle{Unreasonably complicated error}
@@ -291,7 +292,7 @@ module Little_functor =
 
 \begin{frame}[fragile]\frametitle{Unreasonably complicated error}
 \begin{minted}{ocaml}
-module E = Little_functor(A)(A)(B)(C')(E)(F')(G)(H)(H)
+module E = Little_functor(A)(A)(B)(C')(E)(F')(G)(H)(H')
 \end{minted}
   \footnotesize
 \begin{alltt}
@@ -372,6 +373,14 @@ F(Ft)(Ft)(Ft)(Ft)...
 \begin{minted}{ocaml}
   Graph(Edge)(Vertex)
 \end{minted}
+
+Hypothetical error message:
+\begin{alltt}
+The functor Arguments appears to be in the wrong order.
+Did you mean Graph(Vertex)(Edge)?
+\end{alltt}
+
+
 \end{frame}
 
 
