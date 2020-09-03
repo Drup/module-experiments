@@ -47,6 +47,8 @@
 
 \usepackage{cleveref}
 
+\newcommand\TODO[1]{{\textbf{\color{red}{TODO: #1}}}}
+
 \input{notations}
 
 \begin{document}
@@ -100,9 +102,9 @@ Environment accesses:\\
 \end{figure}
 
 
-\begin{figure}[hbt]
-  \input{theory/transp}
-\end{figure}
+% \begin{figure}[hbt]
+%   \input{theory/transp}
+% \end{figure}
 
 \begin{figure}[!p]
   \mprset{sep=1.5em}
@@ -126,9 +128,9 @@ Environment accesses:\\
 % \begin{figure}[hbt]
   \begin{subfigure}[t]{0.3\linewidth}
     \begin{align*}
-      \Oforce{\E}{\Sstrengthen{l}{\ip}{\iM}}
-      &= \Oforce{\E}{\Ostrengthen{l}{\ip}{\iM}}\\
-      \Oforce{\E}{\Senrich{\iC}{\iM}}
+      \Oforce{\E}{\Sstrengthen{l}{\iP}{\iM}}
+      &= \Oforce{\E}{\Ostrengthen{l}{\iP}{\iM}}\\
+      \Oforce{\E}{\Slet{\iC}{\iM}}
       &= \Oforce{\E}{\Oenrich{\iC}{\iM}}\\
       \Oforce{\E}{\Stransp{\iM}{\iM'}}
       &= \Oforce{\E}{\Otransp{\iM}{\iM'}}\\
@@ -137,17 +139,17 @@ Environment accesses:\\
   \end{subfigure}
   \begin{subfigure}[t]{0.33\linewidth}
     \begin{align*}
-      \resolve{\E}{\ip}
-      &= \Sstrengthen{}{\Onormalize{\E}{\ip}}{\lookup{\E}{\Onormalize{\E}{\ip}}}
+      \resolve{\E}{\iP}
+      &= \Sstrengthen{}{\Onormalize{\E}{\iP}}{\lookup{\E}{\Onormalize{\E}{\iP}}}
     \end{align*}
   \end{subfigure}
   \begin{subfigure}[t]{0.33\linewidth}
     \begin{align*}
-      \Onormalize{\E}{\ip}
+      \Onormalize{\E}{\iP}
       &=
         \begin{dcases}
-          \Onormalize{\E}{\ip'} & \text{when } \lookup{\E}{\ip} = \Salias{\ip'} \\
-          \ip & \text{otherwise}
+          \Onormalize{\E}{\iP'} & \text{when } \lookup{\E}{\iP} = \Salias{\iP'} \\
+          \iP & \text{otherwise}
         \end{dcases}
     \end{align*}
   \end{subfigure}

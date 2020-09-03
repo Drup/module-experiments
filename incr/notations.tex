@@ -33,7 +33,8 @@
 \newcommand\Sempty\varepsilon
 
 \newcommand\Senrich[2]{{#2}_{\color{black}\left[#1\right]}}
-\newcommand\Sstrengthen[3]{#3/_{#1}#2}
+\newcommand\Sstrengthen[3]{#3/#2}
+\newcommand\Ssubst[2]{\mathtt{let}\ #1\ \mathtt{in}\ #2}
 
 \newcommand\Slet[2]{\mathtt{let}\ #1 = #2}
 \newcommand\Sval[2]{\mathtt{val}\ #1 : #2}
@@ -50,11 +51,10 @@
 
 % Operation
 \newcommand\Oenrich[2]{{#2}_{\color{red}\left[#1\right]}}
-\newcommand\Ostrengthen[3]{#3{\color{red}/_{#1}#2}}
+\newcommand\Ostrengthen[3]{#3{\color{red}/#2}}
 \newcommand\Otransp[2]{(#1 \operatorname{{\color{red}<:}} #2)}
 \newcommand\Oforce[2]{\operatorname{force}_{#1}(#2)}
 \newcommand\Onormalize[2]{\operatorname{normalize}_{#1}(#2)}
-\newcommand\Osubst[2]{\mathtt{let}\ #1\ \mathtt{in}\ #2}
 
 \newcommand\subst[3]{#3\!\left[#1 \mapsto #2\right]}
 \newcommand\substs[4]{#4\!\left[#1 \mapsto #2\ \middle|\ #1\in#3\right]}

@@ -1,11 +1,11 @@
 \begin{mathpar}
   \inferrule
-  { \submod{\E}{\Oforce{\E}{\iM}}{\Oforce{\E}{\iM'}} }
-  { \submod{\E}{\iM}{\iM'}{} }
+  { \submod{\E}{\Oforce{\E}{\iM}}{\Oforce{\E}{\iM'}}{\iM''} }
+  { \submod{\E}{\iM}{\iM'}{\iM''} }
   \and
   \inferrule
-  { \Onormalize{\E}{\ip} = \Onormalize{\E}{\ip'} }
-  { \submod{\E}{\Salias{\ip}}{\Salias{\ip'}}{} }
+  { \Onormalize{\E}{\iP} = \Onormalize{\E}{\iP'} }
+  { \submod{\E}{\Salias{\iP}}{\Salias{\iP'}}{\Salias{\iP'}} }
   \and
   % \inferrule
   % { }
@@ -24,33 +24,33 @@
   % { \submod{\E}{\iMO}{\ip.\iX} }
   % \and
   \inferrule
-  { \submod{\E}{\resolve{\E}{\ip}}{\iM}{} }
-  { \submod{\E}{\Salias{\ip}}{\iMO}{} }
+  { \submod{\E}{\resolve{\E}{\iP}}{\iMO}{\iM} }
+  { \submod{\E}{\Salias{\iP}}{\iMO}{\iM} }
   \and
   \inferrule
-  { \submod{\E}{\lookup{\E}{\iP}}{\iMO}{} }
-  { \submod{\E}{\iP}{\iMO}{} }
+  { \submod{\E}{\lookup{\E}{\iP}}{\iMO}{\iM} }
+  { \submod{\E}{\iP}{\iMO}{\iM} }
   \and
   \inferrule
-  { \submod{\E}{\iMO}{\lookup{\E}{\iP}}{} }
-  { \submod{\E}{\iMO}{\iP}{} }
+  { \submod{\E}{\iMO}{\lookup{\E}{\iP}}{\iM} }
+  { \submod{\E}{\iMO}{\iP}{\iM} }
   \and
   \inferrule
-  { \Onormalize{\E}{\ip} = \Onormalize{\E}{\ip'} \\
-    \submod{\E}{\resolve{\E}{\ip}}{\iM}{\iM''} \\
-    \submod{\E}{\iM''}{\iM'}{\iM_r}
+  { \Onormalize{\E}{\iP} = \Onormalize{\E}{\iP'} \\
+    \submod{\E}{\resolve{\E}{\iP}}{\iM}{\iM''} \\
+    \submod{\E}{\iM''}{\iM'}{\_}
   }
   { \submod{\E}
-    {\Salias{\Stransp{\ip}{\iM}}}{\Salias{\Stransp{\ip'}{\iM'}}}
-    {\Salias{\Stransp{\ip'}{\iM'}}} }
+    {\Salias{\Stransp{\iP}{\iM}}}{\Salias{\Stransp{\iP'}{\iM'}}}
+    {\Salias{\Stransp{\iP'}{\iM'}}} }
   \and
   \inferrule
-  { \subpath{\E}{\ip}{\ip'} \\
-    \submod{\E}{\resolve{\E}{\ip}}{\iM}{\iM''} \\
-    \submod{\E}{\iM''}{\resolve{\E}{\ip}}{\iM_r}
+  { \subpath{\E}{\iP}{\iP'} \\
+    \submod{\E}{\resolve{\E}{\iP}}{\iM}{\iM''} \\
+    \submod{\E}{\iM''}{\resolve{\E}{\iP}}{\_}
   }
-  { \submod{\E}{\Salias{\Stransp{\ip}{\iM}}}{\Salias{\ip'}}
-    {\Salias{\ip'}} }
+  { \submod{\E}{\Salias{\Stransp{\iP}{\iM}}}{\Salias{\iP'}}
+    {\Salias{\iP'}} }
   \and
   % \inferrule
   % { \submod{\E}{\Multi\iC}{\Multi\iC'} }
@@ -64,35 +64,39 @@
     {\Sfunctor{X}{\iM'_a}{\iM''_r}} }
   \and
   %
-  \inferrule
+  \inferrule[\TODO{figure out permutation}]
   { \pi:\rg{1}{m} \to \rg{1}{n} \\
-    \forall i\in[1;m],\ \submod{\E;\iD_1;\dots;\iD_n}{\iD_{\pi(i)}}{\iD'_i}{}
+    \forall i\in[1;m],\ \submod{\E;\iD_1;\dots;\iD_n}{\iD_{\pi(i)}}{\iD'_i}{\iD''_i}
   }
-  { \submod{\E}{\Ssig{\iD_1;\dots;\iD_n}}{\Ssig{\iD'_1;\dots;\iD'_m}}{} }
+  { \submod{\E}{\Ssig{\iD_1;\dots;\iD_n}}{\Ssig{\iD'_1;\dots;\iD'_m}}{\Ssig{\iD''_1;\dots;\iD''_m}} }
   \and
   %
   \inferrule
-  { \subtyp{\E}{\tau_1}{\tau_2}{} }
-  { \submod{\E}{(\Sval{x_i}{\tau_1})}{(\Sval{x_i}{\tau_2})}{} }
-  \and
-  \inferrule
-  { \submod{\E}{\iM_1}{\iM_2}{}  }
-  { \submod{\E}{(\Smodulety{X_i}{\iM_1})}{(\Smodulety{X_i}{\iM_2})}{} }
-  \and
-  \inferrule
-  { \subtyp{\E}{\tau_1}{\tau_2} }
+  { \submod{\E}{\iM_1}{\iM_2}{\iM}  }
   { \submod{\E}
-    {(\Stype{t_i}{\tau_1})}
-    {(\Stype{t_i}{\tau_2})}
-    {}
-  }
+    {(\Smodulety{X_i}{\iM_1})}{(\Smodulety{X_i}{\iM_2})}
+    {(\Smodulety{X_i}{\iM})} }
   \and
   \inferrule
   { }
   { \submod{\E}
     {(\Stypeabs{t_i})}
     {(\Stypeabs{t_i})}
-    {}
+    {(\Stypeabs{t_i})}
+  }
+  \and
+  \inferrule[\TODO{Double check which side to keep}]
+  { \subtyp{\E}{\tau_1}{\tau_2}{} }
+  { \submod{\E}
+    {(\Sval{x_i}{\tau_1})}{(\Sval{x_i}{\tau_2})}
+    {(\Sval{x_i}{\tau_2})} }
+  \and
+  \inferrule[\TODO{Double check which side to keep}]
+  { \subtyp{\E}{\tau_1}{\tau_2} }
+  { \submod{\E}
+    {(\Stype{t_i}{\tau_1})}
+    {(\Stype{t_i}{\tau_2})}
+    {(\Stype{t_i}{\tau_1})}
   }
   \and
   \inferrule
@@ -100,15 +104,15 @@
   { \submod{\E}
     {(\Stypeabs{t_i})}
     {(\Stype{t_i}{\tau})}
-    {}
+    {(\Stype{t_i}{\tau})}
   }
   \and
   \inferrule
   { }
   { \submod{\E}
-    {(\Stype{t_i}{\tau_1})}
+    {(\Stype{t_i}{\tau})}
     {(\Stypeabs{t_i})}
-    {}
+    {(\Stype{t_i}{\tau})}
   }
 \end{mathpar}
 

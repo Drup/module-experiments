@@ -3,35 +3,29 @@
   { \Smodulety{\ix_i}{\iM} \in \E }
   { \lookup{\E}{\ix_i} = \iM }
   \and
+  \inferrule[\TODO{Clarify how to obtain signature (normalize+force?)}]
+  { \lookup{\E}{\iP} = \Ssig{\iS_1; \Smodulety{\ix}{\iM}; \iS_2} }
+  { \lookup{\E}{\iP.\ix} = \substs{n_i}{\iP.n}{\bv{\iS_1}}{\iM} }
+  \\
   \inferrule
   { \Smoduletype{\iX_i}{\iM} \in \E }
   { \lookup{\E}{\iX_i} = \iM }
   \and
   \inferrule
-  { \lookup{\E}{\ip} = \Ssig{\iS_1; \Smodulety{\ix}{\iM}; \iS_2} }
-  { \lookup{\E}{\ip.\ix} = \substs{n_i}{\ip.n}{\bv{\iS_1}}{\iM} }
+  { \lookup{\E}{\iP} = \Ssig{\iS_1; \Smoduletype{\iX}{\iM}; \iS_2} }
+  { \lookup{\E}{\iP.\iX} = \substs{n_i}{\iP.n}{\bv{\iS_1}}{\iM} }
   \and
   \inferrule
-  { \lookup{\E}{\ip} = \Ssig{\iS_1; \Smoduletype{\iX}{\iM}; \iS_2} }
-  { \lookup{\E}{\ip.\iX} = \substs{n_i}{\ip.n}{\bv{\iS_1}}{\iM} }
-  \and
-  \inferrule
-  { \lookup{\E}{\ip_f} = \Sfunctor{\ix}{\iM_a}{\iM_r} \\
-    \lookup{\E}{\ip_a} = \iM_a }
-  { \lookup{\E}{\Sapp{\ip_f}{\ip_a}} =
-    \Osubst{\ix = \Stransp{\ip_a}{\iM_a}}{\iM_r} }
-  \and
-  \inferrule
-  { \lookup{\E}{\ip_f} = \Sfunctor{\ix}{\iM_a}{\iM_r} \\
-    \lookup{\E}{\ip_a} = \iM_a }
-  { \lookup{\E}{\Sapp{\ip_f}{\ip_a}} =
-    \Osubst{\ix = \Stransp{\ip_a}{\iM_a}}{\iM_r} }
-  \and
-  \inferrule
-  { \lookup{\E}{\ip} = \iM \\
+  { \lookup{\E}{\iP} = \iM \\
     \submod{\E}{\iM}{\iM'}{\iM_r}
   }
-  { \lookup{\E}{\Stransp{\ip}{\iM'}} = \iM_r }
+  { \lookup{\E}{\Stransp{\iP}{\iM'}} = \iM_r }
+  \and
+  \inferrule
+  { \lookup{\E}{\iP_f} = \Sfunctor{\ix}{\iM_a}{\iM_r} \\
+    \lookup{\E}{\iP_a} = \iM_a }
+  { \lookup{\E}{\Sapp{\iP_f}{\iP_a}} =
+    \Ssubst{\ix : \Salias{\Stransp{\iP_a}{\iM_a}}}{\iM_r} }
 \end{mathpar}
 %%% Local Variables:
 %%% mode: latex

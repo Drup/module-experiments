@@ -29,16 +29,16 @@
   \htag{Module types}
   \iMO ::=&\ \iX_i\ |\ \iP.\iX\tag{Variables}\\
   |&\ \Salias{\iP}\tag{Alias}\\
-  |&\ \Swith{\iM}{\iC}\tag{Substitution}\\
   |&\ \Sfunctor{X_i}{\iM_1}{\iM_2}\tag{Functor}\\
   |&\ \Ssig{\iS}\tag{Signature}\\
-  \iM ::=&\ \Ostrengthen{l}{\iP}{\iM}\tag{Strengthening}\\
-  |&\ \Osubst{\iC}{\iM}\tag{Substution}\\
-  |&\ \Otransp{\iM}{\iM'}\tag{Ascription}\\
+  \iM ::=&\ \Sstrengthen{l}{\iP}{\iM}\tag{Strengthening}\\
+  |&\ \Ssubst{\iX : \iM}{\iM}\tag{Let}\\
+  |&\ \Senrich{\iC}{\iM}\tag{Enrichment}\\
+  |&\ \Stransp{\iM}{\iM'}\tag{Ascription}\\
   |&\ \iMO\\
   \htag{Substitutions}
   \iC ::=&\ \ip.t = \tau\\
-  |&\ \ip = \ip'\\
+  |&\ \ip : \iM\\
   \htag{Signatures}
   \iS ::=&\ \Sempty\ |\ \iD;\iS\\
   \iD ::=&\ \Sval{x_i}{\tau}\tag{Values}\\
