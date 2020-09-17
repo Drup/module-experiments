@@ -1,0 +1,342 @@
+\documentclass[aspectratio=169,dvipsnames,svgnames,10pt]{beamer}
+\usepackage{minted}
+\usepackage{alltt}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{xspace}
+\usepackage{cancel}
+\usepackage{pifont}%% check mark
+
+\usetheme[sectionpage=none]{metropolis}
+\setbeamercovered{transparent=20}
+\usepackage[scaled=0.8]{DejaVuSansMono} % A decent mono font
+
+
+\definecolor{green}{rgb}{0, 0.5, 0.1}
+\definecolor{magenta}{rgb}{1, 0, 0}
+\newcommand{\error}[1]{\textcolor{red}{#1}}
+\newcommand{\ok}[1]{\textcolor{green}{#1}}
+
+
+\newcommand\Y{{\color{Green}{\ding{52}}}\xspace}
+\newcommand\N{{\color{Red}{\ding{56}}}\xspace}
+\newcommand\M{{\color{Orange}{\textasciitilde}}\xspace}
+
+\begin{document}
+
+\begin{frame}[t,standout]
+  \centering
+  \Huge Modules -- Low road\\
+  \huge Better error messages via diffing\\
+  \large Florian \textsc{Angeletti} and Gabriel \textsc{Radanne}
+\end{frame}
+
+
+\begin{frame}[fragile]{Error messages for modules}
+
+  \textbf{Problem}: Modules errors are often verbose and complicated
+
+  \uncover<2->{
+  But: Modules are often shallow and their structure is ``list-like''!
+  }
+
+  \uncover<3->{
+    {\bf Idea}: Use the semantic structure of modules for ``diffing''
+  }
+\end{frame}
+
+\begin{frame}[fragile,t]\frametitle{}
+
+\begin{minted}{ocaml}
+module Graph(Vertex:VERTEX)(Edge:EDGE) = struct ... end
+
+module G = Graph(Label)(Vertex)(Edge)
+\end{minted}
+\begin{onlyenv}<2>
+\begin{alltt}
+\error{Error}: Signature mismatch:
+       Modules do not match:
+         sig type t = string end
+       is not included in
+         VERTEX
+       The value `label' is required but not provided
+       The value `create' is required but not provided
+       The type `label' is required but not provided
+       The value `equal' is required but not provided
+       The value `hash' is required but not provided
+       The value `compare' is required but not provided
+\end{alltt}
+\end{onlyenv}
+
+\begin{onlyenv}<3>
+\begin{alltt}
+{\bfseries{}\color{red}{}Error}: The functor application is ill-typed.
+       These arguments:
+         {\color{red}{}\bfseries{}Label} {\color{green}{}Vertex} {\color{green}{}Edge}
+       do not match these parameters:
+         functor {\color{red}{}\bfseries{}} {\color{green}{}(Vertex : VERTEX)} {\color{green}{}(Edge : EDGE)} -> ...
+  {\color{red}{}\bfseries{}1.} The following extra argument is provided
+      Label : sig type t = string end
+  {\color{green}{}2.} Module Vertex matches the expected module type VERTEX
+  {\color{green}{}3.} Module Edge matches the expected module type EDGE
+\end{alltt}
+\end{onlyenv}
+
+\end{frame}
+
+\begin{frame}{}
+  
+  {\Large\bf Finished work:}
+
+  Full implementation for {\bf functor applications} \texttt{F(A)(B)(C)}
+  \begin{itemize}
+  \item Detects additions/deletions/mismatch (Levenstein distance)
+  \item Solid semantic footing (errors are {\it correct} and {\it useful})
+  \item Scales very well in practice
+  \item Handles the full complexity of OCaml modules (dependent, variadic, \dots)
+  \end{itemize}
+  
+  Implementation in {\bf OCaml \href{https://github.com/ocaml/ocaml/pull/9331}{PR9331}}. Review in progress.
+  
+  Presented at {\bf ML workshop 2020}\\
+  ``High-level error messages for modules through diffing''
+\end{frame}
+
+
+\begin{frame}{}
+
+  {\Large\bf Ongoing/future work:}
+
+  Apply diffing to other structural ``diffable'' types:
+  \begin{itemize}
+  \item \textbf{Signatures!}\\
+    $\Rightarrow$ Boilerplate done, ``just'' need to write the error messages
+  \item objects/polymorphic variants\\
+    $\Rightarrow$ Easy in theory
+  \item Function applications\\
+    $\Rightarrow$ promising, but much harder due to unification/inference
+  \item Tree diffing for complete module hierarchies\\
+    $\Rightarrow$ Probably overkill
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[t,standout]
+  \centering
+  \Huge Modules -- High road\\
+  \huge Incremental modules\\
+  \large Gabriel \textsc{Radanne}, Thomas \textsc{Refis} and Didier \textsc{Remy}
+\end{frame}
+
+\begin{frame}[fragile]{Status of the module system}
+
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+  Core system has excellent theoretical footing
+  \begin{itemize}
+  \item Applicative functor -- \texttt{Map.Make(String)}
+  \item Module ascription -- \texttt{(M : S)}
+  \item Manifest -- \texttt{type foo = Foo.t = MyFoo}
+  \item Qualified access -- \texttt{A.v}, \texttt{F(X).t}
+  \end{itemize}
+  \Y All well understood/formalized
+\end{column}
+\begin{column}{0.5\textwidth}
+  \begin{onlyenv}<2->
+  What about ``recent'' features ?
+  \begin{itemize}
+  \item Generative functor:
+    Well understood \Y
+  \item \texttt{with} constraints: 
+    No real formalization \N
+  \item \texttt{module type of}:
+    No formalization, Uncertain semantics \N
+  \item First class modules:
+    Formalized as ``package types'' \Y ...
+    but only in SML \N
+  \item Module aliases:
+    Well studied in theory as singletons \Y ...
+    but in very different settings \N
+  \item Private fields:
+    Only partial formalization
+  \item<3>
+    Interactions are not always clear
+  \end{itemize}
+\end{onlyenv}
+
+\end{column}
+\end{columns}
+\end{frame}
+
+
+
+\begin{frame}{Another look at the module system}
+
+  \textbf{Goal}: Let's have a new look at module formalization:
+  \begin{itemize}
+  \item Reconcile the problematic pieces
+  \item Think about inference
+  \item Fix/improve the known problems
+  \item Provide a sure footing for further experimentation (modular implicits, \dots)
+  \end{itemize}
+
+  \pause
+  \textbf{Non-goal}: Design a new language. 1ML is cool, but we can't use it.
+
+  \pause
+  Let's look at the big problems!
+\end{frame}
+
+
+
+\begin{frame}[fragile,fragile]{The Ugly -- Part 1\hfill Aliases and functors}
+  
+  {\bf Problem}: It is not sound to create an alias of a functor parameter:
+\begin{minted}{ocaml}
+module F (X : S) = struct
+  module A = X (* this is not an alias *)
+end
+\end{minted}
+  {\bf Why}: if the alias is kept, \only<2->{{\color{Grey} we could discover that
+  \texttt{F(MyModule).A = MyModule}, and thus discover fields that are not in
+  \texttt{S}. Since module coercions are implemented by copies, }}that might lead to segfaults\only<1>{?!?}.
+
+    \begin{onlyenv}<3>
+  {\bf Currently}: The type is expanded and module equality is lost:
+\begin{minted}{ocaml}
+module F (X : S) : sig
+  module A : S with type t = X.t
+end
+\end{minted}
+\end{onlyenv}
+  
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Transparent ascriptions}
+
+  {\bf Solution}: Transparent ascriptions!
+
+  A transparent ascriptions hides the values but keep the types.
+\begin{minted}{ocaml}
+module F (X : S) : sig
+  module A = (X <: S) (* X viewed through S *)
+end
+\end{minted}
+
+  \pause
+  \begin{itemize}
+  \item A ``filter'' on the dynamic part of the module
+  \item Also in path : \texttt{F(Y <:\ S).A}
+  \item Generally useful for ``soft compliance'':
+\begin{minted}{ocaml}
+module MyKey <: Map.OrderedType = ...
+\end{minted}
+  \item Essential for modular implicits
+  \end{itemize}
+  
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{The Ugly -- Part 2\hfill Eager operations}
+
+  \textbf{Problem}: Many operations on modules are expanded eagerly: \texttt{with}, \texttt{include}, \texttt{module type of}, strengthening, \dots
+  \begin{itemize}
+  \item Lead to big signatures (Eliom has $>5$Mo {\tt .cmi}s, Janestreet has build perf issues, \dots)
+  \item Loose the original information, problematic for errors and tools (documentation, notably)
+  \end{itemize}
+
+  \pause
+  \textbf{Currently}, when you type:
+\begin{minted}{ocaml}
+module type S = sig 
+  val x : string
+  module A : T
+end
+module M : S with type A.t = int
+\end{minted}
+
+  the typechecker understands:
+\begin{minted}{ocaml}
+module M : sig  val x : string  module A : sig type t = int ... end  end
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Incrementality}
+  
+  \textbf{Solution}: Make an \emph{incremental} calculus for modules.
+  \begin{itemize}
+  \item In a nutshell ``memoization for module type operations''.
+  \item Similar to explicit substitutions, but on modules
+  \item Need to be extra careful around environments!
+  \end{itemize}
+
+  When we typecheck ``\texttt{let y = M.x}'', we push only one step:
+\begin{minted}{ocaml}
+module M : sig
+  val x : string
+  module A : T with type t = int
+end
+\end{minted}
+\end{frame}
+
+
+\begin{frame}[fragile,fragile,fragile]
+  \frametitle{The Ugly -- Part 3\hfill The avoidance problem}
+
+  \textbf{Problem} Let's write the this C\&C (cool and contrived) functor:
+\begin{minted}{ocaml}
+module F (X : S) = struct
+  type a = X.t list
+  type b = X.t * int
+end
+\end{minted}
+
+  What's the type of:
+\begin{minted}{ocaml}
+module A = F(struct type t = A | B end)
+\end{minted}
+  \pause
+  The typechecker gives us:
+\begin{minted}{ocaml}
+module A : sig type a type b end
+\end{minted}
+  This is not very useful. 
+\end{frame}
+
+\begin{frame}[fragile,fragile]{Local bindings and inference}
+
+  We want to have a \emph{principal module type} for this.
+  \begin{itemize}
+  \item This type is used for inference
+  \item It does not have to appear in user signatures
+  \end{itemize}
+  \pause
+  
+  {\bf Solution}: Local module types:
+\begin{minted}{ocaml}
+module A : let X : S in sig
+  type a = X.t list
+  type b = X.t * int
+end
+\end{minted}
+
+  We can then simplify this further down (incrementally, as before).
+\end{frame}
+
+\begin{frame}
+
+  {\bf Current status}:
+  \begin{itemize}
+  \item Large parts of the specs are done
+  \item Prototype ``clean room'' implementation in progress
+  \end{itemize}
+ 
+\end{frame}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-command-extra-options: "-shell-escape"
+%%% TeX-master: t
+%%% End:
