@@ -37,7 +37,7 @@
   \textbf{Problem}: Modules errors are often verbose and complicated
 
   \uncover<2->{
-  But: Modules are often shallow and their structure is ``list-like''!
+  Remark: Modules are often shallow and their structure is ``list-like''!
   }
 
   \uncover<3->{
@@ -124,13 +124,11 @@ module G = Graph(Label)(Vertex)(Edge)
   \centering
   \Huge Modules -- High road\\
   \huge Incremental modules\\
-  \large Gabriel \textsc{Radanne}, Thomas \textsc{Refis} and Didier \textsc{Remy}
+  \large Gabriel \textsc{Radanne}, Thomas \textsc{Refis}, Jacques \textsc{Garrigue} and Didier \textsc{Remy}
 \end{frame}
 
-\begin{frame}[fragile]{Status of the module system}
 
-  \begin{columns}
-    \begin{column}{0.5\textwidth}
+\begin{frame}[fragile]{Status of the module system -- The good}
   Core system has excellent theoretical footing
   \begin{itemize}
   \item Applicative functor -- \texttt{Map.Make(String)}
@@ -139,9 +137,9 @@ module G = Graph(Label)(Vertex)(Edge)
   \item Qualified access -- \texttt{A.v}, \texttt{F(X).t}
   \end{itemize}
   \Y All well understood/formalized
-\end{column}
-\begin{column}{0.5\textwidth}
-  \begin{onlyenv}<2->
+\end{frame}
+
+\begin{frame}[fragile]{Status of the module system -- The less good}
   What about ``recent'' features ?
   \begin{itemize}
   \item Generative functor:
@@ -158,13 +156,9 @@ module G = Graph(Label)(Vertex)(Edge)
     but in very different settings \N
   \item Private fields:
     Only partial formalization
-  \item<3>
+  \item<2>
     Interactions are not always clear
   \end{itemize}
-\end{onlyenv}
-
-\end{column}
-\end{columns}
 \end{frame}
 
 
@@ -183,7 +177,7 @@ module G = Graph(Label)(Vertex)(Edge)
   \textbf{Non-goal}: Design a new language. 1ML is cool, but we can't use it.
 
   \pause
-  Let's look at the big problems!
+  Let's look at some of the big problems!
 \end{frame}
 
 
@@ -216,7 +210,7 @@ end
 
   {\bf Solution}: Transparent ascriptions!
 
-  A transparent ascriptions hides the values but keep the types.
+  Transparent ascriptions hide the values but keep the types.
 \begin{minted}{ocaml}
 module F (X : S) : sig
   module A = (X <: S) (* X viewed through S *)
@@ -227,7 +221,7 @@ end
   \begin{itemize}
   \item A ``filter'' on the dynamic part of the module
   \item Also in path : \texttt{F(Y <:\ S).A}
-  \item Generally useful for ``soft compliance'':
+  \item Generally useful for ``soft constraints'':
 \begin{minted}{ocaml}
 module MyKey <: Map.OrderedType = ...
 \end{minted}
@@ -241,7 +235,7 @@ module MyKey <: Map.OrderedType = ...
 
   \textbf{Problem}: Many operations on modules are expanded eagerly: \texttt{with}, \texttt{include}, \texttt{module type of}, strengthening, \dots
   \begin{itemize}
-  \item Lead to big signatures (Eliom has $>5$Mo {\tt .cmi}s, Janestreet has build perf issues, \dots)
+  \item Lead to big signatures (Eliom has $>5$Mo {\tt .cmi}, Janestreet has build perf issues, \dots)
   \item Loose the original information, problematic for errors and tools (documentation, notably)
   \end{itemize}
 
@@ -279,6 +273,22 @@ end
 \end{minted}
 \end{frame}
 
+\begin{frame}{Current status}
+
+  {\bf In progress}:
+  \begin{itemize}
+  \item Core of the specification is done
+  \item Prototype ``clean room'' implementation in progress
+  \end{itemize}
+
+  {\bf To be done}:
+  \begin{itemize}
+  \item Progressively add more and more features
+  \item Prove good properties
+  \end{itemize}
+\end{frame}
+
+\appendix
 
 \begin{frame}[fragile,fragile,fragile]
   \frametitle{The Ugly -- Part 3\hfill The avoidance problem}
@@ -314,23 +324,13 @@ module A : sig type a type b end
   
   {\bf Solution}: Local module types:
 \begin{minted}{ocaml}
-module A : let X : S in sig
+module A : let X : ... in sig
   type a = X.t list
   type b = X.t * int
 end
 \end{minted}
 
   We can then simplify this further down (incrementally, as before).
-\end{frame}
-
-\begin{frame}
-
-  {\bf Current status}:
-  \begin{itemize}
-  \item Large parts of the specs are done
-  \item Prototype ``clean room'' implementation in progress
-  \end{itemize}
- 
 \end{frame}
 
 \end{document}
