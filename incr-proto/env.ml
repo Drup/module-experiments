@@ -126,7 +126,7 @@ let rec lookup_module : t -> Modules.mod_path -> _
     | Id id ->
       let mty = find_in_env ~key:Module id env in
       mty
-    | Proj (path, field) ->
+    | Proj {path; field} ->
       let path_mty = lookup_module env path in
       let {Modules. sig_self; sig_content} = !extract_signature env path_mty in
       let mty = find_in_sig ~key:Module field sig_content in

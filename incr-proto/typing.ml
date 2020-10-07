@@ -50,7 +50,7 @@ and strengthen_signature_item _env path sigi = match sigi with
     in
     Type_sig (name, new_decl)
   | Module_sig (name, _mty) ->
-    Module_sig (name, Core (Alias (Proj (path, name))))
+    Module_sig (name, Core (Alias (Proj {path; field = name})))
 
 (** Subtyping *)
 
@@ -115,7 +115,7 @@ and subtype_signature env sig1 sig2 =
   let env = Env.add_module id (Core (Signature sig1)) env in
   let newsig = List.map (function
       | Module_sig (field, mty2) ->
-        let mty1 = Env.lookup_module env (Proj (path, field)) in
+        let mty1 = Env.lookup_module env (Proj {path; field}) in
         Module_sig (field, Core (subtype_modtype env mty1 mty2))
       | Value_sig (field, ty2) ->
         let ty1 = Env.lookup_value env { path ; field } in
@@ -128,7 +128,7 @@ and subtype_signature env sig1 sig2 =
         end;
         Type_sig (field, ty2)
       | Module_type_sig (field, mty2) ->
-        let mty1 = Env.lookup_module env (Proj (path, field)) in
+        let mty1 = Env.lookup_module env (Proj {path; field}) in
         Module_type_sig (field, Core (subtype_modtype env mty1 mty2))
     ) sig2_content
   in

@@ -59,7 +59,7 @@ and path = {
 and _ mod_term =
   | Id : Ident.t -> pure mod_term
   (** X *)
-  | Proj : mod_path * field -> pure mod_term
+  | Proj : path -> pure mod_term
   (** P.X *)
   | Ascription : 'a mod_term * mod_type -> 'a mod_term
   (** (mod <: mty) *)

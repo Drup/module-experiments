@@ -40,8 +40,8 @@ and mod_path sub (p : mod_path) =
       | None -> Id id
       | Some p -> p
     end
-  | Proj (p, s) ->
-    Proj (mod_path sub p, s)
+  | Proj {path; field} ->
+    Proj {path = mod_path sub path; field}
   | Apply (p1, p2) ->
     Apply (mod_path sub p1, mod_path sub p2)
   | Ascription (p, mty) ->
