@@ -1,0 +1,7 @@
+;; Library
+(library
+ (name incrml)
+ (public_name incrml)
+ (virtual_modules Types Core)
+ (libraries fmt ppx_deriving.std rresult)
+)
