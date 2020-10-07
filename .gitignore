@@ -32,6 +32,7 @@
 *.vrb
 *.xdy
 *.tdo
+_minted*/
 
 *.pdf
 *auto/
