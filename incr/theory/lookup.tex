@@ -23,9 +23,10 @@
   \and
   \inferrule
   { \lookup{\E}{\iP_f} = \Sfunctor{\ix}{\iM_a}{\iM_r} \\
-    \lookup{\E}{\iP_a} = \iM_a }
+    \submod{\E}{\Salias{\iP_a}}{\iM_a}{\iM}
+  }
   { \lookup{\E}{\Sapp{\iP_f}{\iP_a}} =
-    \Ssubst{\ix : \Salias{\Stransp{\iP_a}{\iM_a}}}{\iM_r} }
+    \Ssubst{\ix : \iM}{\iM_r} }
 \end{mathpar}
 %%% Local Variables:
 %%% mode: latex

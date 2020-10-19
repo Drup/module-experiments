@@ -1,6 +1,6 @@
 \begin{align*}
-  \Ostrengthen{l}{\iP}{\iP'}
-  &\to \Ostrengthen{l}{\iP}{\resolve{\E}{\iP'}}\\
+  \Ostrengthen{l}{\iP}{\iP'.\iX}
+  &\to \Ostrengthen{l}{\iP}{\lookup{\E}{\iP'.\iX}}\\
   \Ostrengthen{l}{\iP}{\Ssig{\iS}}
   &\to \Ssig{\Ostrengthen{l}{\iP}{\iS}}\\
   % \Ostrengthen{l}{\iP}{(\Swith{\iM}{\iC})}
@@ -46,8 +46,8 @@
 \label{module:strengthen}
 
 \begin{align*}
-  \Oenrich{\iC}{\iP}
-  &\to \Oenrich{\iC}{\resolve{\E}{\iP}}\\
+  \Oenrich{\iC}{\iP.\iX}
+  &\to \Oenrich{\iC}{\lookup{\E}{\iP.\iX}}\\
   \Oenrich{\iC}{\Ssig{\iS}}
   &\to \Ssig{\Oenrich{\iC}{\iS}}\\
   % \Oenrich{\iC}{(\Swith{\iM}{\iC'})}

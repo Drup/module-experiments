@@ -3,14 +3,17 @@ open Modules
 type error =
   | Unbounded_module of Ident.t
   | Not_a_subtype of mod_type * mod_type
-  | Not_a_functor
+  | Not_a_functor of mod_type
+  | Not_a_signature of mod_type
   | Already_seen of Ident.t * string
+  | Cannot_eliminate_let of Modules.mod_type
+  | Invalid_enrichment 
 
 exception Ascription_fail
 exception Error of error
 let error e = raise (Error e)
 
-(** Strenghtening *)
+(** Strengthening *)
 
 let rec strengthen_modtype env path mty = match mty with
   | Strengthen _ -> mty
@@ -51,6 +54,61 @@ and strengthen_signature_item _env path sigi = match sigi with
     Type_sig (name, new_decl)
   | Module_sig (name, _mty) ->
     Module_sig (name, Core (Alias (Proj {path; field = name})))
+
+(** Enrichment *)
+(* TODO optimize traversal in case of multiple enrichment *)
+
+and enrich_modtype ~env eq mty = match mty with
+  | Strengthen _
+  | Let _ 
+    -> enrich_modtype_core ~env eq @@ force env mty
+  | Enrich (mty, eq') ->
+    let mtyc = enrich_modtype ~env eq' mty in
+    enrich_modtype ~env eq (Core mtyc)
+  | Core mtyc -> enrich_modtype_core ~env eq mtyc
+
+and enrich_modtype_core ~env eq mtyc = match mtyc with
+  | TPath p ->
+    enrich_modtype ~env eq @@ Env.lookup_module_type env p
+  | Alias p ->
+    (* XXX memoize *)
+    let _ = enrich_modtype ~env eq @@ resolve env p in
+    Alias p
+  | Signature { sig_self; sig_content } ->
+    let sig_content = 
+      List.map (enrich_sigitem ~env eq) sig_content
+    in
+    Signature { sig_self; sig_content }
+  | Functor_type (_, _, _) -> error Invalid_enrichment
+
+and enrich_sigitem ~env eq sigi = match sigi with
+  | Type_sig (field, tydecl) ->
+    begin match eq with
+      | Type ([field'], ty) when String.equal field field' ->
+        let tydecl' = { manifest = None ; definition = Some ty } in
+        subtype_tydecl env tydecl tydecl';
+        Type_sig (field, tydecl')
+      | _ -> sigi
+    end
+  | Module_sig (field, mty) ->
+    begin match eq with
+      | Module ([],_) | Type ([],_) -> assert false
+      | Module ([field'], refined_mty) when String.equal field field' ->
+        let _ = subtype_modtype env refined_mty mty in
+        Module_sig (field, refined_mty)
+      | Module (field'::rest, refined_mty) when String.equal field field' ->
+        let eq = Module (rest, refined_mty) in
+        let mty = Enrich (mty, eq) in
+        Module_sig (field, mty)
+      | Type (field'::rest, refined_ty) when String.equal field field' ->
+        let eq = Type (rest, refined_ty) in
+        let mty = Enrich (mty, eq) in
+        Module_sig (field, mty)
+      | _ -> sigi
+    end
+  | Value_sig (_, _) 
+  | Module_type_sig (_, _)
+    -> sigi
 
 (** Subtyping *)
 
@@ -99,8 +157,9 @@ and subtype_modtype_core env mty1 mty2 =
     check_equiv_path env path1 path2;
     Alias path2
   | Alias path1, _ ->
-    let mty1 = Env.lookup_module env path1 in
-    subtype_modtype env mty1 (Core mty2)
+    Alias (Ascription (path1, Core mty2))
+    (* let mty1 = Env.lookup_module env path1 in
+     * subtype_modtype env mty1 (Core mty2) *)
   | Signature sig1, Signature sig2 ->
     Signature (subtype_signature env sig1 sig2)
   | _ -> raise Ascription_fail
@@ -123,9 +182,7 @@ and subtype_signature env sig1 sig2 =
         Value_sig (field, ty2)
       | Type_sig (field, ty2) ->
         let ty1 = Env.lookup_type env { path ; field } in
-        begin match ty1, ty2 with
-          | _, _ -> () (* TODO *)
-        end;
+        subtype_tydecl env ty1 ty2;
         Type_sig (field, ty2)
       | Module_type_sig (field, mty2) ->
         let mty1 = Env.lookup_module env (Proj {path; field}) in
@@ -133,7 +190,12 @@ and subtype_signature env sig1 sig2 =
     ) sig2_content
   in
   { sig_self = id; sig_content = newsig }
-  
+
+and subtype_tydecl _env tydecl1 tydecl2 = 
+  match tydecl1, tydecl2 with
+  | _, _ -> () (* TODO *)
+
+
 and check_equiv_path env path1 path2 = 
   if normalize env path1 = normalize env path2 then
     ()
@@ -143,8 +205,8 @@ and check_equiv_path env path1 path2 =
 (** Forcing operations *)
 
 and force : Env.t -> mod_type -> mod_type_core =
-  fun env mty ->
-  match mty with
+  fun env mty0 ->
+  match mty0 with
   | Strengthen (mty, path) ->
     force env @@ strengthen_modtype env path mty
   | Let (id, m, mty) ->
@@ -153,9 +215,10 @@ and force : Env.t -> mod_type -> mod_type_core =
         let subst = Subst.add_module id path Subst.identity in
         let mty = Subst.mod_type subst mty in
         force env mty
-      | _ -> (??)
+      | _ -> error @@ Cannot_eliminate_let mty0
     end
-  | Enrich (_, _) -> (??)
+  | Enrich (mty, eq) ->
+    enrich_modtype ~env eq mty
   | Core mtyc -> mtyc
 
 and resolve : Env.t -> mod_path -> mod_type =
@@ -177,6 +240,18 @@ and normalize  : Env.t -> mod_path -> mod_path =
     | _ -> p
   in
   loop p0
+
+and shape : Env.t -> mod_type -> _ =
+  fun env mty ->
+  let rec loop mty = 
+    let mtyc = force env mty in
+    match mtyc with
+    | TPath p -> loop @@ Env.lookup_module_type env p
+    | Alias p -> loop @@ resolve env p
+    | Signature s -> `Signature s
+    | Functor_type (p, m, b) -> `Functor_type (p, m, b)
+  in
+  loop mty
 
 (** Typing *)
 
@@ -203,19 +278,20 @@ let rec type_module :
       Core (Functor_type(param, param_mty, body_mty))
     | Apply(funct, arg) ->
       let fun_mty = type_module env funct in
-      let fun_mtyc = force env fun_mty in
-      begin match fun_mtyc with
-       | Functor_type(param, param_mty, res_mty) ->
-         let arg_mty = type_module env arg in
-         let arg_ascribed_mty = subtype_modtype env arg_mty param_mty in
-         Let (param, arg_ascribed_mty, res_mty)
-       | _ -> error Not_a_functor
-      end
+      let arg_mty = type_module env arg in
+      type_functor_app env fun_mty arg_mty
     | Constraint(m, mty) ->
       Validity.check_modtype env mty;
       let mty' = type_module env m in
       let _ = subtype_modtype env mty' mty in
       mty
+
+and type_functor_app env fun_mty arg_mty = 
+  match shape env fun_mty with
+  | `Functor_type(param, param_mty, res_mty) ->
+    let arg_ascribed_mty = subtype_modtype env arg_mty param_mty in
+    Let (param, arg_ascribed_mty, res_mty)
+  | _ -> error @@ Not_a_functor fun_mty
 
 and type_structure env { str_self; str_content } =
   Env.fold_with str_self type_definition env str_content
@@ -236,3 +312,23 @@ and type_definition env = function
       | Some ty -> Core.Typing.def_type env ty
     end ;
     Type_sig(id, typedef)
+
+(** Env mutual recursion *)
+
+let compute_ascription env mty1 mty2 =
+  Core (subtype_modtype env mty1 mty2)
+
+let compute_functor_app env ~f:fun_mty ~arg =
+  let arg_mty = Core (Alias arg) in
+  type_functor_app env fun_mty arg_mty
+
+let compute_signature env mty =
+  match shape env mty with
+  | `Signature s -> s
+  | _ -> error @@ Not_a_signature mty
+
+let () =
+  Env.compute_ascription := compute_ascription;
+  Env.compute_functor_app := compute_functor_app;
+  Env.compute_signature := compute_signature;
+  ()

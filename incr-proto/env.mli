@@ -21,9 +21,9 @@ val lookup_module: t -> Modules.mod_path -> Modules.mod_type
 val lookup_module_type: t -> Modules.path -> Modules.mod_type
 
 
-val extract_signature :
+val compute_signature :
   (t -> Modules.mod_type -> Modules.signature) ref
 val compute_ascription :
   (t -> Modules.mod_type -> Modules.mod_type -> Modules.mod_type) ref
 val compute_functor_app :
-  (t -> Modules.mod_type -> Modules.mod_type -> Modules.mod_type) ref
+  (t -> f:Modules.mod_type -> arg:Modules.mod_path -> Modules.mod_type) ref

@@ -32,8 +32,8 @@ and mod_type = mod_type_op
    * | Resolved of mod_type_core * mod_type_op  *)
 
 and enrichment =
-  | Module of mod_path * mod_path (** P = P *)
-  | Type of path * Types.def_type (** P.t = τ *)
+  | Module of field list * mod_type (** X.Y.Z : M *)
+  | Type of field list * Types.def_type (** X.Y.Z.t = τ *)
 
 and signature = {
   sig_self : Ident.t ;

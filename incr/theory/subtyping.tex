@@ -3,10 +3,6 @@
   { \submod{\E}{\Oforce{\E}{\iM}}{\Oforce{\E}{\iM'}}{\iM''} }
   { \submod{\E}{\iM}{\iM'}{\iM''} }
   \and
-  \inferrule
-  { \Onormalize{\E}{\iP} = \Onormalize{\E}{\iP'} }
-  { \submod{\E}{\Salias{\iP}}{\Salias{\iP'}}{\Salias{\iP'}} }
-  \and
   % \inferrule
   % { }
   % { \submod{\E}{\ip.\iX}{\ip.\iX} }
@@ -23,10 +19,6 @@
   % { \submod{\E}{\iMO}{\E(\ip.\iX)} }
   % { \submod{\E}{\iMO}{\ip.\iX} }
   % \and
-  \inferrule
-  { \submod{\E}{\resolve{\E}{\iP}}{\iMO}{\iM} }
-  { \submod{\E}{\Salias{\iP}}{\iMO}{\iM} }
-  \and
   \inferrule
   { \submod{\E}{\lookup{\E}{\iP}}{\iMO}{\iM} }
   { \submod{\E}{\iP}{\iMO}{\iM} }
@@ -51,6 +43,15 @@
   }
   { \submod{\E}{\Salias{\Stransp{\iP}{\iM}}}{\Salias{\iP'}}
     {\Salias{\iP'}} }
+  \and
+  \inferrule
+  { \Onormalize{\E}{\iP} = \Onormalize{\E}{\iP'} }
+  { \submod{\E}{\Salias{\iP}}{\Salias{\iP'}}{\Salias{\iP'}} }
+  \and
+  \inferrule
+  { % \submod{\E}{\resolve{\E}{\iP}}{\iMO}{\iM}
+  }
+  { \submod{\E}{\Salias{\iP}}{\iMO}{\Salias{\Stransp{\iP}{\iMO}}} }
   \and
   % \inferrule
   % { \submod{\E}{\Multi\iC}{\Multi\iC'} }

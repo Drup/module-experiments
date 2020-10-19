@@ -93,7 +93,7 @@ let rec find_in_sig
       env ->
       find_in_sig ~key field env
 
-let extract_signature
+let compute_signature
   : (t -> Modules.mod_type -> Modules.signature) ref
   = ref (assert false)
 
@@ -102,10 +102,7 @@ let compute_ascription
   = ref (assert false)
 
 let compute_functor_app
-  : (t ->
-     Modules.mod_type ->
-     Modules.mod_type ->
-     Modules.mod_type) ref
+  : (t -> f:Modules.mod_type -> arg:Modules.mod_path -> Modules.mod_type) ref
   = ref (assert false)
 
 let subst_self_in_sig
@@ -128,7 +125,7 @@ let rec lookup_module : t -> Modules.mod_path -> _
       mty
     | Proj {path; field} ->
       let path_mty = lookup_module env path in
-      let {Modules. sig_self; sig_content} = !extract_signature env path_mty in
+      let {Modules. sig_self; sig_content} = !compute_signature env path_mty in
       let mty = find_in_sig ~key:Module field sig_content in
       subst_self_in_sig ~self:sig_self ~path ~sort:Module mty
     | Ascription (path, ascr_mty) -> 
@@ -137,14 +134,13 @@ let rec lookup_module : t -> Modules.mod_path -> _
       mty
     | Apply (path_f, path_arg) ->
       let mty_f = lookup_module env path_f in
-      let mty_arg = lookup_module env path_arg in
-      let mty = !compute_functor_app env mty_f mty_arg in
+      let mty = !compute_functor_app env ~f:mty_f ~arg:path_arg in
       mty
 
 let lookup : type a . a key -> t -> Modules.path -> a
   = fun key env {Modules. path ; field } ->
     let path_mty = lookup_module env path in
-    let {Modules. sig_self; sig_content} = !extract_signature env path_mty in
+    let {Modules. sig_self; sig_content} = !compute_signature env path_mty in
     let elt = find_in_sig ~key field sig_content in
     subst_self_in_sig ~self:sig_self ~path ~sort:key elt
 
