@@ -1,12 +1,12 @@
 type t = {
-  values : Types.val_type Ident.tbl ;
+  values : Core_types.val_type Ident.tbl ;
   types : Modules.type_decl Ident.tbl ;
   modules : Modules.mod_type Ident.tbl ;
   module_types : Modules.mod_type Ident.tbl ;
 }
 
 type _ key =
-  | Value : Types.val_type key
+  | Value : Core_types.val_type key
   | Type : Modules.type_decl key
   | Module : Modules.mod_type key
   | Module_type : Modules.mod_type key
@@ -110,7 +110,7 @@ let subst_self_in_sig
   = fun ~self ~path ~sort x ->
     let subst = Subst.add_module self path Subst.identity in
     let f : _ -> a -> a = match sort with
-      | Value -> Core.Subst.val_type
+      | Value -> Subst.val_type
       | Type -> Subst.type_decl
       | Module -> Subst.mod_type
       | Module_type -> Subst.mod_type

@@ -1,7 +1,6 @@
 open Modules
-module S = Core.Subst
 
-type t = Core.Subst.t = {
+type t = Core_subst.t = {
   (* types : Modules.path Ident.Map.t ; *)
   modules : Modules.mod_path Ident.Map.t ;
   (* module_types : Modules.path Ident.Map.t ; *)
@@ -21,10 +20,12 @@ let add_module p v sub =
 (* let add_module_type p v sub =
  *   {sub with module_types = Ident.Map.add p v sub.module_types } *)
 
+let val_type sub (decl : Core_types.val_type) = Core_subst.val_type sub decl
+
 let rec type_decl sub (decl : Modules.type_decl) : Modules.type_decl =
   { definition = (match decl.definition with
         | None -> None
-        | Some dty -> Some (S.def_type sub dty)) ;
+        | Some dty -> Some (Core_subst.def_type sub dty)) ;
     manifest = match decl.manifest with
         None -> None
       | Some p -> Some (path sub p)
@@ -66,7 +67,7 @@ and mod_type_core sub mty =
     Functor_type(id, mod_type sub mty1, mod_type sub mty2)
 
 and signature_item sub = function
-  | Value_sig(id, vty) -> Value_sig(id, S.val_type sub vty)
+  | Value_sig(id, vty) -> Value_sig(id, val_type sub vty)
   | Type_sig(id, decl) -> Type_sig(id, type_decl sub decl)
   | Module_sig(id, mty) -> Module_sig(id, mod_type sub mty)
   | Module_type_sig(id, mty) -> Module_type_sig(id, mod_type sub mty)

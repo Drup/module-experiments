@@ -5,7 +5,7 @@ type field = string
 
 type type_decl = {
   manifest : path option ;
-  definition : Types.def_type option ;
+  definition : Core_types.def_type option ;
 }
 (** abstract or manifest *)
 
@@ -33,14 +33,14 @@ and mod_type = mod_type_op
 
 and enrichment =
   | Module of field list * mod_type (** X.Y.Z : M *)
-  | Type of field list * Types.def_type (** X.Y.Z.t = τ *)
+  | Type of field list * Core_types.def_type (** X.Y.Z.t = τ *)
 
 and signature = {
   sig_self : Ident.t ;
   sig_content : signature_item list ;
 }
 and signature_item =
-  | Value_sig of field * Types.val_type
+  | Value_sig of field * Core_types.val_type
   (** val x: ty *)
   | Type_sig of field * type_decl
   (** type t :: k [= ty] *)
@@ -77,7 +77,7 @@ and structure = {
   str_content : structure_item list ;
 }
 and structure_item =
-    Value_str of field * Types.term
+    Value_str of field * Core_types.term
   (** let x = expr *)
   | Type_str of field * type_decl
   (** type t :: k = ty *)
