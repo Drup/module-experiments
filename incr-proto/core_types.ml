@@ -8,4 +8,5 @@ type term = Unit
 
 type val_type = Unit
 
-type def_type = Unit
+type def_type =
+  | Alias of val_type

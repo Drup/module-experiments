@@ -11,4 +11,5 @@ let val_type
   = fun _ Unit -> Unit
 let def_type
   : t -> def_type -> def_type
-  = fun _ Unit -> Unit   
+  = fun env -> function
+    | Alias ty -> Alias (val_type env ty)
