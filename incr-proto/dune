@@ -4,3 +4,12 @@
  (public_name incrml)
  (libraries fmt ppx_deriving.std rresult)
 )
+
+(ocamllex
+ (modules lexer)
+)
+
+(menhir
+ (modules parser)
+ (flags --explain)
+)
