@@ -49,6 +49,7 @@ let expecting loc nonterm =
 %token VAL
 %token WITH
 
+%left DOT
 %nonassoc below_WITH
 %left WITH
 (* %nonassoc AND *)
@@ -304,8 +305,8 @@ module_expr:
           Functor (id, param, acc)
         ) me args
       }
-  | x = mod_longident
-      { x }
+  | UIDENT            { Id $1 }
+  | module_expr DOT UIDENT { Proj{ path = $1 ; field = $3 } }
   | me = paren_module_expr
       { me }
   | me1 = module_expr me2 = paren_module_expr
