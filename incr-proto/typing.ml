@@ -1,296 +1,60 @@
-open Modules
+open Peyhel
+open Parsetree
+module M = Modules
+module Op = Modules_op
 
 type error =
-  | Unbounded_module of Ident.t
-  | Not_a_subtype of mod_type * mod_type
-  | Not_a_functor of mod_type
-  | Not_a_signature of mod_type
-  | Already_seen of Ident.t * string
-  | Cannot_eliminate_let of Modules.mod_type
-  | Invalid_enrichment 
-
+  | Unbound_module of Parsetree.name
+  | Unbound_modtype of M.path
+  | Unbound_type of M.path
+  | Not_a_functor of M.mod_type
+  | Not_a_signature of M.mod_type
+  | Not_a_mod_path of mod_path
+  | Not_a_path of path
+  
 exception Ascription_fail
 exception Error of error
 let error e = raise (Error e)
 
-(** Strengthening *)
-
-let rec strengthen_modtype env path mty = match mty with
-  | Strengthen _ -> mty
-  | Let _ 
-  | Enrich (_, _) ->
-    let mtyc = force env mty in
-    strengthen_modtype_core env path mtyc
-  | Core mtyc -> strengthen_modtype_core env path mtyc
-
-and strengthen_modtype_core env path mty = match mty with
-  | TPath mtp ->
-    let mty = Env.lookup_module_type env mtp in
-    strengthen_modtype env path mty
-  | Alias (_p) -> (* TOCHECK *)
-    Core (Alias (path))
-  | Signature sigs ->
-    Core (Signature (strengthen_signature env path sigs))
-  | Functor_type (param, param_mty, body_mty) ->
-    let path_for_body = Apply (path, Id param) in
-    let body_mty = Strengthen (body_mty, path_for_body) in
-    Core (Functor_type (param, param_mty, body_mty))
-
-and strengthen_signature env path { sig_self; sig_content } =
-  { sig_self ;
-    sig_content = List.map (strengthen_signature_item env path) sig_content ;
-  }
-  
-and strengthen_signature_item _env path sigi = match sigi with
-  | Value_sig _
-  | Module_type_sig _
-    -> sigi
-  | Type_sig (name, _decl) ->
-    let new_decl = {
-      manifest = Some {path; field = name} ;
-      definition = None ;
-    }
-    in
-    Type_sig (name, new_decl)
-  | Module_sig (name, _mty) ->
-    Module_sig (name, Core (Alias (Proj {path; field = name})))
-
-(** Enrichment *)
-(* TODO optimize traversal in case of multiple enrichment *)
-
-and enrich_modtype ~env eq mty = match mty with
-  | Strengthen _
-  | Let _ 
-    -> enrich_modtype_core ~env eq @@ force env mty
-  | Enrich (mty, eq') ->
-    let mtyc = enrich_modtype ~env eq' mty in
-    enrich_modtype ~env eq (Core mtyc)
-  | Core mtyc -> enrich_modtype_core ~env eq mtyc
-
-and enrich_modtype_core ~env eq mtyc = match mtyc with
-  | TPath p ->
-    enrich_modtype ~env eq @@ Env.lookup_module_type env p
-  | Alias p ->
-    (* XXX memoize *)
-    let _ = enrich_modtype ~env eq @@ resolve env p in
-    Alias p
-  | Signature { sig_self; sig_content } ->
-    let sig_content = 
-      List.map (enrich_sigitem ~env eq) sig_content
-    in
-    Signature { sig_self; sig_content }
-  | Functor_type (_, _, _) -> error Invalid_enrichment
-
-and enrich_sigitem ~env eq sigi = match sigi with
-  | Type_sig (field, tydecl) ->
-    begin match eq with
-      | Type ([field'], ty) when String.equal field field' ->
-        let tydecl' = { manifest = None ; definition = Some ty } in
-        subtype_tydecl env tydecl tydecl';
-        Type_sig (field, tydecl')
-      | _ -> sigi
-    end
-  | Module_sig (field, mty) ->
-    begin match eq with
-      | Module ([],_) | Type ([],_) -> assert false
-      | Module ([field'], refined_mty) when String.equal field field' ->
-        let _ = subtype_modtype env refined_mty mty in
-        Module_sig (field, refined_mty)
-      | Module (field'::rest, refined_mty) when String.equal field field' ->
-        let eq = Module (rest, refined_mty) in
-        let mty = Enrich (mty, eq) in
-        Module_sig (field, mty)
-      | Type (field'::rest, refined_ty) when String.equal field field' ->
-        let eq = Type (rest, refined_ty) in
-        let mty = Enrich (mty, eq) in
-        Module_sig (field, mty)
-      | _ -> sigi
-    end
-  | Value_sig (_, _) 
-  | Module_type_sig (_, _)
-    -> sigi
-
-(** Subtyping *)
-
-and subtype_modtype env mty1 mty2 =
-  try subtype_modtype_op env mty1 mty2 with
-  | Ascription_fail -> error (Not_a_subtype (mty1, mty2))
-
-and subtype_modtype_op env mty1 mty2 =
-  match mty1, mty2 with
-  | _, _ ->
-    let mtyc1 = force env mty1 in
-    let mtyc2 = force env mty2 in
-    subtype_modtype_core env mtyc1 mtyc2
-
-and subtype_modtype_core env mty1 mty2 =
-  match mty1, mty2 with
-  | TPath p1, _ ->
-    let mty1 = Env.lookup_module_type env p1 in
-    subtype_modtype env mty1 (Core mty2)
-  | _, TPath p2 ->
-    let mty2 = Env.lookup_module_type env p2 in
-    subtype_modtype env (Core mty1) mty2
-  | Functor_type (param1, param_mty1, body1),
-    Functor_type (param2, param_mty2, body2) ->
-    let _ = subtype_modtype env param_mty2 param_mty1 in
-    let body1 =
-      let subst = Subst.add_module param1 (Id param2) Subst.identity in
-      Subst.mod_type subst body1
-    in
-    let env = Env.add_module param2 param_mty2 env in
-    let body = subtype_modtype env body1 body2 in
-    Functor_type (param1, param_mty2, Core body)
-  | Alias (Ascription (path1, mty1)),
-    Alias (Ascription (path2, mty2)) ->
-    check_equiv_path env path1 path2;
-    let mty = subtype_modtype env (Env.lookup_module env path1) mty1 in
-    let _ = subtype_modtype env (Core mty) mty2 in
-    Alias (Ascription (path2, mty2))
-  | Alias (Ascription (path1, mty1)),
-    Alias path2 ->
-    check_equiv_path env path1 path2;
-    let mty = subtype_modtype env (Env.lookup_module env path1) mty1 in
-    let _ = subtype_modtype env (Core mty) (Env.lookup_module env path2) in
-    Alias path2
-  | Alias path1, Alias path2 ->
-    check_equiv_path env path1 path2;
-    Alias path2
-  | Alias path1, _ ->
-    Alias (Ascription (path1, Core mty2))
-    (* let mty1 = Env.lookup_module env path1 in
-     * subtype_modtype env mty1 (Core mty2) *)
-  | Signature sig1, Signature sig2 ->
-    Signature (subtype_signature env sig1 sig2)
-  | _ -> raise Ascription_fail
-
-and subtype_signature env sig1 sig2 =
-  let id = Ident.create (Ident.name sig1.sig_self) in
-  let path = Id id in
-  let sig2_content =
-    let subst = Subst.add_module sig2.sig_self path Subst.identity in
-    List.map (Subst.signature_item subst) sig2.sig_content
-  in
-  let env = Env.add_module id (Core (Signature sig1)) env in
-  let newsig = List.map (function
-      | Module_sig (field, mty2) ->
-        let mty1 = Env.lookup_module env (Proj {path; field}) in
-        Module_sig (field, Core (subtype_modtype env mty1 mty2))
-      | Value_sig (field, ty2) ->
-        let ty1 = Env.lookup_value env { path ; field } in
-        Core.Include.val_type env ty1 ty2;
-        Value_sig (field, ty2)
-      | Type_sig (field, ty2) ->
-        let ty1 = Env.lookup_type env { path ; field } in
-        subtype_tydecl env ty1 ty2;
-        Type_sig (field, ty2)
-      | Module_type_sig (field, mty2) ->
-        let mty1 = Env.lookup_module env (Proj {path; field}) in
-        Module_type_sig (field, Core (subtype_modtype env mty1 mty2))
-    ) sig2_content
-  in
-  { sig_self = id; sig_content = newsig }
-
-and subtype_tydecl _env tydecl1 tydecl2 = 
-  match tydecl1, tydecl2 with
-  | _, _ -> () (* TODO *)
-
-
-and check_equiv_path env path1 path2 = 
-  if normalize env path1 = normalize env path2 then
-    ()
-  else
-    raise Ascription_fail
-
-(** Forcing operations *)
-
-and force : Env.t -> mod_type -> mod_type_core =
-  fun env mty0 ->
-  match mty0 with
-  | Strengthen (mty, path) ->
-    force env @@ strengthen_modtype env path mty
-  | Let (id, m, mty) ->
-    begin match m with
-      | Alias path ->
-        let subst = Subst.add_module id path Subst.identity in
-        let mty = Subst.mod_type subst mty in
-        force env mty
-      | _ -> error @@ Cannot_eliminate_let mty0
-    end
-  | Enrich (mty, eq) ->
-    enrich_modtype ~env eq mty
-  | Core mtyc -> mtyc
-
-and resolve : Env.t -> mod_path -> mod_type =
-  fun env p0 ->
-  let rec loop p = 
-    let mty = Env.lookup_module env p in
-    match force env mty with
-    | Alias p -> loop p
-    | mtyc -> strengthen_modtype_core env p mtyc
-  in
-  loop p0
-
-and normalize  : Env.t -> mod_path -> mod_path =
-  fun env p0 ->
-  let rec loop p = 
-    let mty = Env.lookup_module env p in
-    match force env mty with
-    | Alias p -> loop p
-    | _ -> p
-  in
-  loop p0
-
-and shape : Env.t -> mod_type -> _ =
-  fun env mty ->
-  let rec loop mty = 
-    let mtyc = force env mty in
-    match mtyc with
-    | TPath p -> loop @@ Env.lookup_module_type env p
-    | Alias p -> loop @@ resolve env p
-    | Signature s -> `Signature s
-    | Functor_type (p, m, b) -> `Functor_type (p, m, b)
-  in
-  loop mty
-
 (** Typing *)
 
 let rec type_module :
-  type p . Env.t -> p mod_term -> mod_type
-  = fun env md -> match md with
-    | Id _ 
-    | Proj _ as p ->
-      let _ = Env.lookup_module env p in
+  Env.t -> mod_term -> M.mod_type
+  = fun env md ->
+    match transl_mod_path_opt env md with
+    | Some p ->
       Core (Alias p)
-    | Ascription (m, mty) ->
-      let mty' = type_module env m in
-      let mty_r = subtype_modtype env mty' mty in
-      Core mty_r
-    | Structure str ->
-      let signature = type_structure env str in
-      Core (Signature signature)
-    | Functor(param, param_mty, body) ->
-      Validity.check_modtype env param_mty;
-      let body_mty =
-        let env = Env.add_module param param_mty env in
-        type_module env body
-      in
-      Core (Functor_type(param, param_mty, body_mty))
-    | Apply(funct, arg) ->
-      let fun_mty = type_module env funct in
-      let arg_mty = type_module env arg in
-      type_functor_app env fun_mty arg_mty
-    | Constraint(m, mty) ->
-      Validity.check_modtype env mty;
-      let mty' = type_module env m in
-      let _ = subtype_modtype env mty' mty in
-      mty
-
+    | None -> begin match md with
+        | Id _ | Proj _ -> assert false
+        | Ascription (m, mty) ->
+          let mty = transl_modtype env mty in
+          let mty' = type_module env m in
+          let mty_r = Op.subtype_modtype env mty' mty in
+          Core mty_r
+        | Structure str ->
+          let signature = type_structure env str in
+          Core (Signature signature)
+        | Functor(param, param_mty, body) ->
+          let param_mty = transl_modtype env param_mty in
+          let param, env = Env.intro_module param param_mty env in
+          let body_mty = type_module env body in
+          Core (Functor_type(param, param_mty, body_mty))
+        | Apply(funct, arg) ->
+          let fun_mty = type_module env funct in
+          let arg_mty = type_module env arg in
+          type_functor_app env fun_mty arg_mty
+        | Constraint(m, mty) ->
+          let mty = transl_modtype env mty in
+          let mty' = type_module env m in
+          let _ = Op.subtype_modtype env mty' mty in
+          mty
+      end
+        
 and type_functor_app env fun_mty arg_mty = 
-  match shape env fun_mty with
+  match Op.shape env fun_mty with
   | `Functor_type(param, param_mty, res_mty) ->
-    let arg_ascribed_mty = subtype_modtype env arg_mty param_mty in
-    Let (param, arg_ascribed_mty, res_mty)
+    let arg_ascribed_mty = Op.subtype_modtype env arg_mty param_mty in
+    Let (param, Core arg_ascribed_mty, res_mty)
   | _ -> error @@ Not_a_functor fun_mty
 
 and type_structure env { str_self; str_content } =
@@ -301,29 +65,149 @@ and type_definition env = function
     let ty = Core.Typing.term env term in
     Value_sig(id, ty)
   | Module_str(id, modl) ->
-    let mty =type_module env modl in
+    let mty = type_module env modl in
     Module_sig(id, mty)
   | Module_type_str(id, mty) ->
-    Validity.check_modtype env mty;
-    Module_sig(id, mty)
-  | Type_str(id, typedef) ->
-    begin match typedef.definition with
+    let mty = transl_modtype env mty in
+    Module_type_sig(id, mty)
+  | Type_str(id, { manifest; definition }) ->
+    let manifest =
+      let f ty =
+        let ty = transl_path env ty in
+        begin try ignore @@ Env.lookup_type env ty with
+          | Not_found -> error @@ Unbound_type ty
+        end;
+        ty
+      in      
+      Option.map f manifest
+    in
+    begin match definition with
       | None -> ()
       | Some ty -> Core.Typing.def_type env ty
     end ;
-    Type_sig(id, typedef)
+    Type_sig(id, { manifest; definition })
+
+(* We do not guarantee well formed-ness of path. 
+   Any subsequent lookup will do that *)
+and transl_mod_path_internal : Env.t -> mod_term -> M.mod_path =
+  fun env m ->
+  let rec as_path env m : M.mod_path = match m with
+    | Id name ->
+      let id =
+        match Env.find_root_module env name with
+        | Some id -> id
+        | None -> error @@ Unbound_module name
+      in    
+      M.Id id
+    | Proj { path; field } ->
+      let path = as_path env path in
+      M.Proj { path ; field }
+    | Ascription (m, mty) ->
+      let m = as_path env m in
+      let mty = transl_modtype env mty in
+      M.Ascription (m, mty)
+    | Apply (f, m) -> 
+      let m = as_path env m in
+      let f = as_path env f in
+      M.Apply (f, m)
+    | Structure _ 
+    | Functor (_, _, _) 
+    | Constraint (_, _) -> raise Exit
+  in
+  as_path env m
+
+and transl_mod_path_opt env m =
+  try Some (transl_mod_path_internal env m) with
+  | Exit -> None
+
+and transl_mod_path env m =
+  try transl_mod_path_internal env m with
+  | Exit -> error @@ Not_a_mod_path m
+
+and transl_path env ({path ; field} as p) =
+  try
+    let path = transl_mod_path_internal env path in
+    {M. path; field}
+  with
+  | Exit -> error @@ Not_a_path p
+
+and transl_modtype env = function
+  | TPath p ->
+    let p = transl_path env p in
+    begin
+      try ignore @@ Env.lookup_module_type env p with
+      | Not_found -> error @@ Unbound_modtype p
+    end;
+    M.Core (TPath p)
+  | Alias p ->
+    let p = transl_mod_path env p in
+    M.Core (Alias p)
+  | Signature sg ->
+    M.Core (transl_signature env sg)
+  | Functor_type(param, param_ty, res) ->
+    let param_ty = transl_modtype env param_ty in
+    let param, env = Env.intro_module param param_ty env in
+    let res = transl_modtype env res in
+    M.Core (Functor_type(param, param_ty, res))
+  | Let (name, mty1, mty2) ->
+    let mty1 = transl_modtype env mty1 in
+    let id, env = Env.intro_module name mty1 env in
+    let mty2 = transl_modtype env mty2 in
+    M.Let (id, mty1, mty2)
+  | Enrich (mty, enrich) ->
+    let enrich = match enrich with
+      | Module (ns, mty) ->
+        let mty = transl_modtype env mty in
+        M.Module (ns, mty)
+      | Type (ns, ty) ->
+        Type (ns, ty)
+    in
+    let mty = transl_modtype env mty in
+    M.Core (Op.enrich_modtype ~env enrich mty)
+
+and transl_signature env { sig_self; sig_content } =
+  let sig_final =
+    Env.fold_with sig_self transl_signature_item env sig_content
+  in
+  Signature sig_final
+
+and transl_signature_item env = function
+  | Value_sig(id, ty) ->
+    Value_sig(id, ty)
+  | Module_sig(id, mty) ->
+    let mty = transl_modtype env mty in
+    Module_sig(id, mty)
+  | Module_type_sig(id, mty) ->
+    let mty = transl_modtype env mty in
+    Module_sig(id, mty)
+  | Type_sig(id, { manifest; definition }) ->
+    let manifest =
+      let f ty =
+        let ty = transl_path env ty in
+        begin try ignore @@ Env.lookup_type env ty with
+          | Not_found -> error @@ Unbound_type ty
+        end;
+        ty
+      in      
+      Option.map f manifest
+    in
+    begin match definition with
+      | None -> ()
+      | Some ty -> Core.Typing.def_type env ty
+    end ;
+    Type_sig(id, { manifest; definition })
 
 (** Env mutual recursion *)
 
-let compute_ascription env mty1 mty2 =
-  Core (subtype_modtype env mty1 mty2)
+and compute_ascription env mty1 mty2 =
+  M.Core (Op.subtype_modtype env mty1 mty2)
 
-let compute_functor_app env ~f:fun_mty ~arg =
-  let arg_mty = Core (Alias arg) in
+and compute_functor_app env ~f:fun_mty ~arg =
+  let arg_mty = M.Core (Alias arg) in
   type_functor_app env fun_mty arg_mty
 
-let compute_signature env mty =
-  match shape env mty with
+and compute_signature env mty =
+  match Op.shape env mty with
   | `Signature s -> s
   | _ -> error @@ Not_a_signature mty
 
@@ -332,3 +216,29 @@ let () =
   Env.compute_functor_app := compute_functor_app;
   Env.compute_signature := compute_signature;
   ()
+
+(** Errors *)
+  
+let prepare_error = function
+  | Unbound_module name ->
+    Report.errorf "Unbound module %s" name
+  | Unbound_modtype p ->
+    Report.errorf "Unbound module type %a" Printer.path p
+  | Unbound_type p ->
+    Report.errorf "Unbound type %a" Printer.path p
+  | Not_a_functor mty ->
+    Report.errorf "This module cannot be applied. It as type:@ %a"
+      Printer.module_type mty
+  | Not_a_signature mty ->
+    Report.errorf "This module is not a signature. It as type:@ %a"
+      Printer.module_type mty
+  | Not_a_mod_path mty ->
+    Report.errorf "This module is not a module path. It as type:@ %a"
+      Printer.Untyped.module_term mty
+  | Not_a_path mty ->
+    Report.errorf "This module is not a path. It as type:@ %a"
+      Printer.Untyped.path mty
+
+let () = Report.register_report_of_exn @@ function
+  | Error e -> Some (prepare_error e)
+  | _ -> None

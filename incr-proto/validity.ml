@@ -11,7 +11,7 @@ let rec check_modtype_core env = function
   | TPath path ->
     begin
       try ignore @@ Env.lookup_module_type env path with
-      | Env.Not_found -> error @@ Unbound_modtype path
+      | Not_found -> error @@ Unbound_modtype path
     end
   | Alias _ -> ()
   | Signature sg -> check_signature env sg
@@ -23,9 +23,9 @@ let rec check_modtype_core env = function
 and check_modtype = assert false
 
 and check_signature env {Modules. sig_self ; sig_content } =
-  let id = Ident.create (Ident.name sig_self) in
+  let name = Ident.name sig_self in
   let _sig =
-    Env.fold_with id check_signature_items env sig_content
+    Env.fold_with name check_signature_items env sig_content
   in
   ()
 

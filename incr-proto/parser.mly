@@ -2,22 +2,39 @@
 
 %{
 
+open Peyhel
+open Peyhel.Input.Parse
 open Parsetree
-  
+   
+let make_loc (startpos, endpos) = Location.Location (startpos, endpos)
 
-let make_loc (startpos, endpos) = {
-  Location.loc_start = startpos;
-  Location.loc_end = endpos;
-  Location.loc_ghost = false;
-}
-
+type error +=
+  | Unclosed of Location.loc * string * Location.loc * string
+  | Expecting of Location.loc * string
+              
 let unclosed opening_name opening_loc closing_name closing_loc =
-  raise(Syntaxerr.Error(Syntaxerr.Unclosed(make_loc opening_loc, opening_name,
-                                           make_loc closing_loc, closing_name)))
+  raise(Error(Unclosed(make_loc opening_loc, opening_name,
+                       make_loc closing_loc, closing_name)))
 
 let expecting loc nonterm =
-    raise Syntaxerr.(Error(Expecting(make_loc loc, nonterm)))
+    raise(Error(Expecting(make_loc loc, nonterm)))
 
+(* Error report *)
+
+let prepare_error = function
+  | Error (Unclosed (opening_loc, _opening, closing_loc, closing)) ->
+     Some (Report.errorf
+        ~loc:closing_loc
+        ~sub:[opening_loc]
+        "Syntax error: '%s' expected" closing)
+  | Error (Expecting (loc, nonterm)) ->
+      Some (Report.errorf ~loc "Syntax error: %s expected." nonterm)
+  | _ -> None
+
+let () =
+  Report.register_report_of_exn prepare_error
+
+  
 %}
 
 /* Tokens */
@@ -465,7 +482,7 @@ module_type:
 (* A signature, which appears between SIG and END (among other places),
    is a list of signature elements. *)
 signature:
-  RPAREN name = UIDENT LPAREN l = flatten(signature_element*)
+  LPAREN name = UIDENT RPAREN l = flatten(signature_element*)
     { { sig_self = name ; sig_content = l } }
 ;
 
@@ -527,7 +544,7 @@ module_declaration_body:
 (* Core expressions *)
 
 expr:
-    RPAREN LPAREN { Core_types.Unit }
+    LPAREN RPAREN { Core_types.Unit }
 ;
 
 /* Value descriptions */
@@ -569,6 +586,9 @@ type_kind:
   | EQUAL
     ty = core_type
       { (None, Some (Alias ty : Core_types.def_type)) }
+  | EQUAL
+    ty = type_longident
+      { (Some ty, None) }
   (* | EQUAL
    *   oty = type_synonym
    *   cs = constructor_declarations
@@ -661,4 +681,7 @@ mod_ext_longident:
 ;
 mty_longident:
     mk_longident(longident_in_types,ident) { $1 }
+;
+type_longident:
+    mk_longident(longident_in_types,LIDENT) { $1 }
 ;

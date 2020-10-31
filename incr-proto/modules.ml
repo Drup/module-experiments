@@ -22,7 +22,7 @@ and mod_type_core =
 and mod_type_op =
   | Strengthen of mod_type * mod_path
   (** mty/P *)
-  | Let of Ident.t * mod_type_core * mod_type
+  | Let of Ident.t * mod_type * mod_type
   (** let X : mty in mty *)
   | Enrich of mod_type * enrichment
   (** (mty with C) *)

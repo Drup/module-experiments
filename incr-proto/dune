@@ -1,9 +1,15 @@
-;; Library
 (library
  (name incrml)
- (public_name incrml)
- (libraries fmt ppx_deriving.std rresult)
+ (modules :standard \ main)
+ (libraries fmt containers rresult peyhel)
 )
+
+(executable
+ (name main)
+ (public_name incrml)
+ (modules main)
+ (libraries incrml peyhel.native)
+) 
 
 (ocamllex
  (modules lexer)

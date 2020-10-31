@@ -37,9 +37,9 @@ and path sub {Modules. path ; field } =
 and mod_path sub (p : mod_path) =
   match p with
   | Id id ->
-    begin match Ident.Map.find_opt id sub.modules with
-      | None -> Id id
-      | Some p -> p
+    begin
+      try Ident.Map.lookup id sub.modules with
+      | Not_found -> Id id
     end
   | Proj {path; field} ->
     Proj {path = mod_path sub path; field}
@@ -50,7 +50,7 @@ and mod_path sub (p : mod_path) =
 
 and mod_type sub mty =
   Ident.Map.fold
-    (fun id p expr -> Let (id, Alias p, expr))
+    (fun id p expr -> Let (id, Core (Alias p), expr))
     sub.modules mty
 
 and mod_type_core sub mty =

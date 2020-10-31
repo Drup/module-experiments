@@ -31,7 +31,6 @@ let map (type a) (k : a key) (f : a Ident.tbl -> a Ident.tbl) env =
   | Module -> { env with modules = f env.modules }
   | Module_type -> { env with module_types = env.module_types }
 
-exception Not_found
 exception Duplicated_entry
 
 let add key id v env =
@@ -46,7 +45,8 @@ let add_type = add Type
 let add_module = add Module
 let add_module_type = add Module_type
 
-let fold_with id f env0 l0 =
+let fold_with name f env0 l0 =
+  let id = Ident.create name in
   let update_sig sig_content env =
     let signature = {Modules. sig_self = id ; sig_content } in
     map Module (Ident.Map.add id (Modules.Core (Signature signature))) env
@@ -64,14 +64,24 @@ let fold_with id f env0 l0 =
   let env0 = update_sig [] env0 in
   aux_fold env0 [] l0
 
-let find_in_env
+let intro key name v env =
+  let id = Ident.create name in
+  let f tbl =
+    Ident.Map.add id v tbl
+  in
+  id, map key f env
+
+let intro_value = intro Value
+let intro_type = intro Type
+let intro_module = intro Module
+let intro_module_type = intro Module_type
+
+let lookup_in_env
   : type a . key:a key -> _ -> _ -> a
   = fun ~key id env ->
-    match Ident.Map.find_opt id (select key env) with
-    | Some x -> x
-    | None -> raise Not_found
+    Ident.Map.lookup id (select key env)
 
-let rec find_in_sig
+let rec lookup_in_sig
   : type a . key:a key -> _ -> _ -> a
   = fun ~key field env ->
     match key, env with
@@ -91,19 +101,19 @@ let rec find_in_sig
     | _,
       ( Value_sig _ | Type_sig _ | Module_sig _ | Module_type_sig _ ) ::
       env ->
-      find_in_sig ~key field env
+      lookup_in_sig ~key field env
 
 let compute_signature
   : (t -> Modules.mod_type -> Modules.signature) ref
-  = ref (assert false)
+  = ref (fun _ _ -> assert false)
 
 let compute_ascription
   : (t -> Modules.mod_type -> Modules.mod_type -> Modules.mod_type) ref
-  = ref (assert false)
+  = ref (fun _ _ _ -> assert false)
 
 let compute_functor_app
   : (t -> f:Modules.mod_type -> arg:Modules.mod_path -> Modules.mod_type) ref
-  = ref (assert false)
+  = ref (fun _ ~f:_ ~arg:_ -> assert false)
 
 let subst_self_in_sig
   : type a . self:Ident.t -> path:Modules.mod_path -> sort:a key -> a -> a
@@ -121,12 +131,12 @@ let rec lookup_module : t -> Modules.mod_path -> _
   = fun env path0 ->
     match path0 with
     | Id id ->
-      let mty = find_in_env ~key:Module id env in
+      let mty = lookup_in_env ~key:Module id env in
       mty
     | Proj {path; field} ->
       let path_mty = lookup_module env path in
       let {Modules. sig_self; sig_content} = !compute_signature env path_mty in
-      let mty = find_in_sig ~key:Module field sig_content in
+      let mty = lookup_in_sig ~key:Module field sig_content in
       subst_self_in_sig ~self:sig_self ~path ~sort:Module mty
     | Ascription (path, ascr_mty) -> 
       let path_mty = lookup_module env path in
@@ -141,9 +151,15 @@ let lookup : type a . a key -> t -> Modules.path -> a
   = fun key env {Modules. path ; field } ->
     let path_mty = lookup_module env path in
     let {Modules. sig_self; sig_content} = !compute_signature env path_mty in
-    let elt = find_in_sig ~key field sig_content in
+    let elt = lookup_in_sig ~key field sig_content in
     subst_self_in_sig ~self:sig_self ~path ~sort:key elt
 
 let lookup_value = lookup Value
 let lookup_type = lookup Type
 let lookup_module_type = lookup Module_type
+
+let find_root_module env id =
+  try 
+    let id, _ = Ident.Map.find id (select Module env) in
+    Some id
+  with Not_found -> None

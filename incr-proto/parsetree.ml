@@ -17,7 +17,7 @@ and mod_type =
   (** sig ... end *)
   | Functor_type of name * mod_type * mod_type
   (** functor(X: mty) mty *)
-  | Let of Ident.t * mod_type * mod_type
+  | Let of name * mod_type * mod_type
   (** let X : mty in mty *)
   | Enrich of mod_type * enrichment
   (** (mty with C) *)
