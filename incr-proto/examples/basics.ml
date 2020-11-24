@@ -6,6 +6,8 @@ end
 
 module B = (Basics.A <: sig (X) type t end)
 
-type t = Basics.B.t2
+type tb = Basics.B.t2
 
-module C = Basics.A
+module C = (Basics.B <: sig (X) val a : () end)
+
+type tc = Basics.C.t

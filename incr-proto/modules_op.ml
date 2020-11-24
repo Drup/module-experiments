@@ -1,11 +1,13 @@
+open Peyhel
 open Modules
 
 type error =
   | Not_a_subtype of mod_type * mod_type
   | Cannot_eliminate_let of Modules.mod_type
-  | Invalid_enrichment 
+  | Invalid_enrichment of Modules.enrichment * Modules.mod_type
 
 exception Ascription_fail
+exception Enrichment_fail
 exception Error of error
 let error e = raise (Error e)
 
@@ -63,25 +65,29 @@ and strengthen_module_decl _env path field _mty =
 (** Enrichment *)
 (* TODO optimize traversal in case of multiple enrichment *)
 
-and enrich_modtype ~env eq mty = match mty with
+and enrich_modtype ~env eq mty =
+  try enrich_modtype_raw ~env eq mty with
+  | Enrichment_fail -> error @@ Invalid_enrichment (eq, mty)
+
+and enrich_modtype_raw ~env eq mty = match mty with
   | Strengthen _
   | Let _ 
     -> enrich_modtype_core ~env eq @@ force env mty
   | Enrich (mty, eq') ->
-    let mtyc = enrich_modtype ~env eq' mty in
-    enrich_modtype ~env eq (Core mtyc)
+    let mtyc = enrich_modtype_raw ~env eq' mty in
+    enrich_modtype_raw ~env eq (Core mtyc)
   | Core mtyc -> enrich_modtype_core ~env eq mtyc
 
 and enrich_modtype_core ~env eq mtyc = match mtyc with
   | TPath p ->
-    enrich_modtype ~env eq @@ Env.lookup_module_type env p
+    enrich_modtype_raw ~env eq @@ Env.lookup_module_type env p
   | Alias p ->
     (* XXX memoize *)
-    let _ = enrich_modtype ~env eq @@ resolve env p in
+    let _ = enrich_modtype_raw ~env eq @@ resolve env p in
     Alias p
   | Signature s ->
     Signature (enrich_signature ~env eq s)
-  | Functor_type (_, _, _) -> error Invalid_enrichment
+  | Functor_type (_, _, _) -> raise Enrichment_fail
 
 and enrich_signature ~env eq
     { sig_self; sig_values; sig_types; sig_modules; sig_module_types } =
@@ -265,7 +271,7 @@ and force : Env.t -> mod_type -> mod_type_core =
       | _ -> error @@ Cannot_eliminate_let mty0
     end
   | Enrich (mty, eq) ->
-    enrich_modtype ~env eq mty
+    enrich_modtype_raw ~env eq mty
   | Core mtyc -> mtyc
 
 and resolve : Env.t -> mod_path -> mod_type =
@@ -310,3 +316,25 @@ and shape : Env.t -> mod_type -> _ =
     | Functor_type (p, m, b) -> `Functor_type (p, m, b)
   in
   loop mty
+
+(** Errors *)
+  
+let prepare_error = function
+  | Not_a_subtype (mty1, mty2) ->
+    Report.errorf
+      "@[<v>@[<v2>The module@ @[%a@]@]@,@[<v2>is not included in@ @[%a@]@]@]"
+      Printer.module_type mty1
+      Printer.module_type mty2
+  | Cannot_eliminate_let mty ->
+    Report.errorf
+      "@[<v 2>Cannot eliminate let in the module type@,@[%a@]@]"
+      Printer.module_type mty
+  | Invalid_enrichment (eq, mty) ->
+    Report.errorf
+      "@[<v 2>The enrichment @[%a@] cannot be applied to module@ @[%a@]@]"
+      Printer.enrichment eq
+      Printer.module_type mty
+
+let () = Report.register_report_of_exn @@ function
+  | Error e -> Some (prepare_error e)
+  | _ -> None

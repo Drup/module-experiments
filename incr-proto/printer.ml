@@ -25,17 +25,21 @@ and module_type fmt = function
       ident id
       module_type mty1
       module_type mty2
-  | Enrich (mty, Module (fields, mty')) ->
-    Fmt.pf fmt "@[%a@ with@ %a@ :@ %a@]"
+  | Enrich (mty, eq) ->
+    Fmt.pf fmt "@[%a@ with@ %a@]"
       module_type mty
+      enrichment eq
+  | Core mtyc -> mod_type_core fmt mtyc
+
+and enrichment fmt = function
+  | Module (fields, mty) ->
+    Fmt.pf fmt "module@ %a@ :@ %a"
       (Fmt.list ~sep:(Fmt.unit ".") Fmt.string) fields
-      module_type mty'
-  | Enrich (mty, Type (fields, ty)) ->
-    Fmt.pf fmt "@[%a@ with@ %a@ =@ %a@]"
       module_type mty
+  | Type (fields, ty) ->
+    Fmt.pf fmt "type@ %a@ :@ %a"
       (Fmt.list ~sep:(Fmt.unit ".") Fmt.string) fields
       Core_printer.def_type ty
-  | Core mtyc -> mod_type_core fmt mtyc
 
 and mod_type_core fmt = function
   | TPath p -> path fmt p
