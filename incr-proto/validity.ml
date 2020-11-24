@@ -22,26 +22,15 @@ let rec check_modtype_core env = function
 
 and check_modtype = assert false
 
-and check_signature env {Modules. sig_self ; sig_content } =
-  let name = Ident.name sig_self in
-  let _sig =
-    Env.fold_with name check_signature_items env sig_content
-  in
-  ()
-
-and check_signature_items env item =
-  let () = match item with
-    | Value_sig(_, vty) ->
-      Core.Typing.val_type env vty
-    | Type_sig(_, decl) ->
-      begin match decl.definition with
+and check_signature env s =
+  let mty = Modules.Core (Signature s) in
+  let env = Env.add_module s.sig_self mty env in
+  FieldMap.iter (fun _ vty -> Core.Typing.val_type env vty) s.sig_values ;
+  FieldMap.iter (fun _ decl -> match decl.definition with
           None -> ()
         | Some typ ->
-          Core.Typing.def_type env typ
-      end
-    | Module_sig(_, mty) ->
-      check_modtype env mty
-    | Module_type_sig(_, mty) ->
-      check_modtype env mty
-  in
-  item
+          Core.Typing.def_type env typ)
+    s.sig_types ;
+  FieldMap.iter (fun _ mty -> check_modtype env mty) s.sig_modules ;
+  FieldMap.iter (fun _ mty -> check_modtype env mty) s.sig_module_types ;
+  ()

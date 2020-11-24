@@ -13,5 +13,5 @@ val path: t -> Modules.path -> Modules.path
 val val_type : t -> Core_types.val_type -> Core_types.val_type
 val type_decl : t -> Modules.type_decl -> Modules.type_decl
 val mod_type : t -> Modules.mod_type -> Modules.mod_type
-val signature_item : t -> Modules.signature_item -> Modules.signature_item
 val mod_type_core : t -> Modules.mod_type_core -> Modules.mod_type_core
+val signature : t -> Modules.signature -> Modules.signature

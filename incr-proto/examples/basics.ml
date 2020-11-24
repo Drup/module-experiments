@@ -8,4 +8,4 @@ module B = (Basics.A <: sig (X) type t end)
 
 type t = Basics.B.t2
 
-(* module type B = struct (B) end *)
+module C = Basics.A

@@ -2,6 +2,7 @@ type pure = Pure
 type impure = Impure
 
 type field = string
+module FieldMap = CCMap.Make(String)
 
 type type_decl = {
   manifest : path option ;
@@ -37,8 +38,12 @@ and enrichment =
 
 and signature = {
   sig_self : Ident.t ;
-  sig_content : signature_item list ;
+  sig_values : Core_types.val_type FieldMap.t ;
+  sig_types : type_decl FieldMap.t ;
+  sig_modules : mod_type FieldMap.t ;
+  sig_module_types : mod_type FieldMap.t ;
 }
+
 and signature_item =
   | Value_sig of field * Core_types.val_type
   (** val x: ty *)

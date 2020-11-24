@@ -32,7 +32,7 @@ include Peyhel.Make(struct
     
     let exec _import env c =
       let s = Typing.type_structure env c in
-      Peyhel.Report.printf "%a@." Printer.unit s.sig_content;
+      Peyhel.Report.printf "%a@." Printer.interface s;
       Env.add_module s.sig_self Modules.(Core (Signature s)) env
 
   end)

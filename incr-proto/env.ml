@@ -1,3 +1,5 @@
+open Peyhel
+
 type t = {
   values : Core_types.val_type Ident.tbl ;
   types : Modules.type_decl Ident.tbl ;
@@ -31,13 +33,13 @@ let map (type a) (k : a key) (f : a Ident.tbl -> a Ident.tbl) env =
   | Module -> { env with modules = f env.modules }
   | Module_type -> { env with module_types = env.module_types }
 
-exception Duplicated_entry
+type error =
+  | Already_defined of Modules.signature_item
+
+exception Error of error
 
 let add key id v env =
-  let f tbl =
-    if Ident.Map.mem id tbl then raise Duplicated_entry
-    else Ident.Map.add id v tbl
-  in
+  let f tbl = Ident.Map.add id v tbl in
   map key f env
 
 let add_value = add Value
@@ -45,24 +47,52 @@ let add_type = add Type
 let add_module = add Module
 let add_module_type = add Module_type
 
+
+let empty_sig id = {Modules.
+  sig_self = id ;
+  sig_values = Modules.FieldMap.empty ;
+  sig_types = Modules.FieldMap.empty ;
+  sig_modules = Modules.FieldMap.empty ;
+  sig_module_types = Modules.FieldMap.empty ;
+}
+
 let fold_with name f env0 l0 =
   let id = Ident.create name in
-  let update_sig sig_content env =
-    let signature = {Modules. sig_self = id ; sig_content } in
+  let update_sig env signature =
     map Module (Ident.Map.add id (Modules.Core (Signature signature))) env
   in
-  let add_item item sigitems = sigitems @ [item] in
-  let rec aux_fold env sigitems = function
-    | [] ->
-      {Modules. sig_self = id ; sig_content = sigitems }
-    | h :: t ->
-      let item = f env h in
-      let sigitems = add_item item sigitems in
-      let env = update_sig sigitems env in
-      aux_fold env sigitems t
+  let add_item item (s : Modules.signature) = match item with
+    | Modules.Value_sig (field, decl) ->
+      if Modules.FieldMap.mem field s.sig_values then
+        raise (Error (Already_defined item));
+      let sig_values = Modules.FieldMap.add field decl s.sig_values in
+      {s with sig_values }
+    | Type_sig (field, decl) ->
+      if Modules.FieldMap.mem field s.sig_types then
+        raise (Error (Already_defined item));
+      let sig_types = Modules.FieldMap.add field decl s.sig_types in
+      {s with sig_types }
+    | Module_sig (field, decl) ->
+      if Modules.FieldMap.mem field s.sig_modules then
+        raise (Error (Already_defined item));
+      let sig_modules = Modules.FieldMap.add field decl s.sig_modules in
+      {s with sig_modules }
+    | Module_type_sig (field, decl) ->
+      if Modules.FieldMap.mem field s.sig_module_types then
+        raise (Error (Already_defined item));
+      let sig_module_types = Modules.FieldMap.add field decl s.sig_module_types in
+      {s with sig_module_types }
   in
-  let env0 = update_sig [] env0 in
-  aux_fold env0 [] l0
+  let rec aux_fold env signature = function
+    | [] -> signature
+    | h :: t ->
+      let env = update_sig env signature in
+      let item = f env h in
+      let signature = add_item item signature in
+      aux_fold env signature t
+  in
+  let sig0 = empty_sig id in
+  aux_fold env0 sig0 l0
 
 let intro key name v env =
   let id = Ident.create name in
@@ -81,28 +111,6 @@ let lookup_in_env
   = fun ~key id env ->
     Ident.Map.lookup id (select key env)
 
-let rec lookup_in_sig
-  : type a . key:a key -> _ -> _ -> a
-  = fun ~key field env ->
-    match key, env with
-    | _, [] -> raise Not_found
-    | Value,
-      Modules.Value_sig (field', ty) :: _ when field = field' ->
-      ty
-    | Type,
-      Modules.Type_sig (field', ty) :: _ when field = field' ->
-      ty
-    | Module,
-      Modules.Module_sig (field', mty) :: _ when field = field' ->
-      mty
-    | Module_type,
-      Modules.Module_type_sig (field', mty) :: _ when field = field' ->
-      mty
-    | _,
-      ( Value_sig _ | Type_sig _ | Module_sig _ | Module_type_sig _ ) ::
-      env ->
-      lookup_in_sig ~key field env
-
 let compute_signature
   : (t -> Modules.mod_type -> Modules.signature) ref
   = ref (fun _ _ -> assert false)
@@ -114,6 +122,15 @@ let compute_ascription
 let compute_functor_app
   : (t -> f:Modules.mod_type -> arg:Modules.mod_path -> Modules.mod_type) ref
   = ref (fun _ ~f:_ ~arg:_ -> assert false)
+
+let lookup_raw_in_sig
+  : type a . key:a key -> Modules.field -> Modules.signature -> a
+  = fun ~key field s ->
+    match key with
+    | Value -> Modules.FieldMap.find field s.sig_values
+    | Type -> Modules.FieldMap.find field s.sig_types
+    | Module -> Modules.FieldMap.find field s.sig_modules
+    | Module_type -> Modules.FieldMap.find field s.sig_module_types
 
 let subst_self_in_sig
   : type a . self:Ident.t -> path:Modules.mod_path -> sort:a key -> a -> a
@@ -127,6 +144,10 @@ let subst_self_in_sig
     in
     f subst x
 
+let lookup_in_sig ~key path field s =
+  let elt = lookup_raw_in_sig ~key field s in
+  subst_self_in_sig ~self:s.sig_self ~path ~sort:key elt
+
 let rec lookup_module : t -> Modules.mod_path -> _
   = fun env path0 ->
     match path0 with
@@ -135,9 +156,8 @@ let rec lookup_module : t -> Modules.mod_path -> _
       mty
     | Proj {path; field} ->
       let path_mty = lookup_module env path in
-      let {Modules. sig_self; sig_content} = !compute_signature env path_mty in
-      let mty = lookup_in_sig ~key:Module field sig_content in
-      subst_self_in_sig ~self:sig_self ~path ~sort:Module mty
+      let s = !compute_signature env path_mty in
+      lookup_in_sig ~key:Module path field s
     | Ascription (path, ascr_mty) -> 
       let path_mty = lookup_module env path in
       let mty = !compute_ascription env path_mty ascr_mty in
@@ -150,9 +170,8 @@ let rec lookup_module : t -> Modules.mod_path -> _
 let lookup : type a . a key -> t -> Modules.path -> a
   = fun key env {Modules. path ; field } ->
     let path_mty = lookup_module env path in
-    let {Modules. sig_self; sig_content} = !compute_signature env path_mty in
-    let elt = lookup_in_sig ~key field sig_content in
-    subst_self_in_sig ~self:sig_self ~path ~sort:key elt
+    let s = !compute_signature env path_mty in
+    lookup_in_sig ~key path field s
 
 let lookup_value = lookup Value
 let lookup_type = lookup Type
@@ -163,3 +182,21 @@ let find_root_module env id =
     let id, _ = Ident.Map.find id (select Module env) in
     Some id
   with Not_found -> None
+
+
+(** Errors *)
+  
+let prepare_error = function
+  | Already_defined item ->
+    let sort, name = match item with
+      | Modules.Value_sig (s,_) -> "value", s
+      | Modules.Type_sig (s,_) -> "type", s
+      | Modules.Module_sig (s,_) -> "module", s
+      | Modules.Module_type_sig (s,_) -> "module type", s
+    in
+    Report.errorf "The %s %s is already defined" sort name
+  
+let () = Report.register_report_of_exn @@ function
+  | Error e -> Some (prepare_error e)
+  | _ -> None
+

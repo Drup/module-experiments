@@ -60,14 +60,17 @@ and mod_type_core sub mty =
     Alias (mod_path sub p)
   (* | Alias (p, Some mty) ->
    *   Alias (mod_path sub p, Some (mod_type sub mty)) *)
-  | Signature { sig_self; sig_content } ->
-    Signature { sig_self; sig_content =
-                            (List.map (signature_item sub) sig_content)}
+  | Signature s ->
+    Signature (signature sub s)
   | Functor_type(id, mty1, mty2) ->
     Functor_type(id, mod_type sub mty1, mod_type sub mty2)
 
-and signature_item sub = function
-  | Value_sig(id, vty) -> Value_sig(id, val_type sub vty)
-  | Type_sig(id, decl) -> Type_sig(id, type_decl sub decl)
-  | Module_sig(id, mty) -> Module_sig(id, mod_type sub mty)
-  | Module_type_sig(id, mty) -> Module_type_sig(id, mod_type sub mty)
+and signature sub
+    { sig_self; sig_values; sig_types; sig_modules; sig_module_types }
+  = {
+    sig_self ;
+    sig_values = FieldMap.map (val_type sub) sig_values ;
+    sig_types = FieldMap.map (type_decl sub) sig_types ;
+    sig_modules = FieldMap.map (mod_type sub) sig_modules ;
+    sig_module_types = FieldMap.map (mod_type sub) sig_module_types ;
+  }

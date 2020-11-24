@@ -1,9 +1,21 @@
 open Modules
 
+let fields f m fmt =
+  FieldMap.iter (fun k d -> Fmt.sp fmt () ; f fmt k d) m
+
 let rec path fmt { path ; field } =
   Fmt.pf fmt "@[<h>%a.%s@]" module_path path field
 
 and ident fmt id = Fmt.string fmt (Ident.name id)
+
+and module_path : _ -> mod_path -> unit =
+  fun fmt mdt -> match mdt with
+    | Id id -> ident fmt id
+    | Proj p -> path fmt p
+    | Ascription (md, mty) ->
+      Fmt.pf fmt "@[<2>(%a@ <:@ %a)@]" module_path md module_type mty
+    | Apply (md1, md2) ->
+      Fmt.pf fmt "@[<2>%a@ %a@]" module_path md1 module_path md2
 
 and module_type fmt = function
   | Strengthen (mty, p) ->
@@ -28,55 +40,45 @@ and module_type fmt = function
 and mod_type_core fmt = function
   | TPath p -> path fmt p
   | Alias p -> Fmt.pf fmt "@[(= %a)@]" module_path p
-  | Signature { sig_self; sig_content } ->
-    Fmt.pf fmt "@[<hov>@[<hov 2>sig (%a)@ %a@]@ end@]"
-      ident sig_self
-      (Fmt.list ~sep:Fmt.sp signature_item) sig_content
+  | Signature s ->
+    Fmt.pf fmt "@[<hov>@[<hov 2>sig (%a)%a@]@ end@]"
+      ident s.sig_self
+      signature_content s
   | Functor_type (id, param, body) ->
     Fmt.pf fmt "@[<hov2>@[(%a@ :@ %a)@ ->@]@ %a@]"
       ident id
       module_type param
       module_type body
 
-and signature_item fmt = function
-  | Value_sig (field, ty) ->
-    Fmt.pf fmt "@[<2>val %s =@ %a@]"
-      field
-      Core_printer.val_type ty
-  | Type_sig (field, tydecl) ->
-    Fmt.pf fmt "@[<2>type %s%a@]"
-      field
-      type_decl tydecl
-  | Module_sig (field, mty) ->
-    module_declaration fmt field mty
-  | Module_type_sig (field, mty) ->
-    Fmt.pf fmt "@[<2>module %s =@ %a@]"
-      field
-      module_type mty
+and signature_content fmt
+    { sig_self = _ ; sig_values; sig_types; sig_modules; sig_module_types } =
+  Fmt.pf fmt "%t%t%t%t"
+    (fields type_declaration sig_types)
+    (fields module_type_declaration sig_module_types)
+    (fields module_declaration sig_modules)
+    (fields value_declaration sig_values)
+
+and value_declaration fmt field ty =
+  Fmt.pf fmt "@[<2>val %s =@ %a@]" field Core_printer.val_type ty
+and type_declaration fmt field tydecl = 
+  Fmt.pf fmt "@[<2>type %s%a@]" field type_decl tydecl
+and module_type_declaration fmt field mty = 
+  Fmt.pf fmt "@[<2>module %s =@ %a@]" field module_type mty
 
 and module_declaration fmt name mty = match mty with
   | Core (Alias p) -> 
     Fmt.pf fmt "@[<2>module %s =@ %a@]"
       name
       module_path p
-  | Core (Signature { sig_self; sig_content }) -> 
-    Fmt.pf fmt "@[<v>@[<v 2>module %s : sig (%a)@ %a@]@ end@]"
+  | Core (Signature s) -> 
+    Fmt.pf fmt "@[<v>@[<v 2>module %s : sig (%a)%a@]@ end@]"
       name
-      ident sig_self
-      (Fmt.list ~sep:Fmt.sp signature_item) sig_content
+      ident s.sig_self
+      signature_content s
   | _ -> 
     Fmt.pf fmt "@[<2>module %s :@ %a@]"
       name
       module_type mty
-
-and module_path : _ -> mod_path -> unit =
-  fun fmt mdt -> match mdt with
-    | Id id -> ident fmt id
-    | Proj p -> path fmt p
-    | Ascription (md, mty) ->
-      Fmt.pf fmt "@[<2>(%a@ <:@ %a)@]" module_path md module_type mty
-    | Apply (md1, md2) ->
-      Fmt.pf fmt "@[<2>%a@ %a@]" module_path md1 module_path md2
 
 and type_decl fmt { manifest ; definition } =
   match manifest, definition with
@@ -90,9 +92,8 @@ and type_decl fmt { manifest ; definition } =
       path p
       Core_printer.def_type def
 
-and unit fmt l = 
-  Fmt.pf fmt "@[<v>%a@]@."
-    (Fmt.list ~sep:Fmt.cut signature_item) l
+and interface fmt s = 
+  Fmt.pf fmt "@[<v>%a@]@." signature_content s
 
 module Untyped = struct
   open Parsetree
