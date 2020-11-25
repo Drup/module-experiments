@@ -46,7 +46,7 @@ let rec type_module :
         | Constraint(m, mty) ->
           let mty = transl_modtype env mty in
           let mty' = type_module env m in
-          let _ = Op.subtype_modtype env mty' mty in
+          Op.check_subtype_modtype env mty' mty ;
           mty
       end
         
@@ -87,8 +87,6 @@ and type_definition env = function
     end ;
     Type_sig(id, { manifest; definition })
 
-(* We do not guarantee well formed-ness of path. 
-   Any subsequent lookup will do that *)
 and transl_mod_path_internal : Env.t -> mod_term -> M.mod_path =
   fun env m ->
   let rec as_path env m : M.mod_path = match m with
@@ -114,7 +112,10 @@ and transl_mod_path_internal : Env.t -> mod_term -> M.mod_path =
     | Functor (_, _, _) 
     | Constraint (_, _) -> raise Exit
   in
-  as_path env m
+  let p = as_path env m in
+  (* We try to resolve the module, to check it's a valid path *)
+  let (_ : Modules.mod_type) = Op.resolve env p in
+  p
 
 and transl_mod_path_opt env m =
   try Some (transl_mod_path_internal env m) with
@@ -163,7 +164,7 @@ and transl_modtype env = function
         Type (ns, ty)
     in
     let mty = transl_modtype env mty in
-    M.Core (Op.enrich_modtype ~env enrich mty)
+    Op.enrich_modtype ~env enrich mty
 
 and transl_signature env { sig_self; sig_content } =
   let sig_final =

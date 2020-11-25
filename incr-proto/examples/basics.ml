@@ -10,4 +10,3 @@ type tb = Basics.B.t2
 
 module C = (Basics.B <: sig (X) val a : () end)
 
-type tc = Basics.C.t

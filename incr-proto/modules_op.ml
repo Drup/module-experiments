@@ -66,7 +66,7 @@ and strengthen_module_decl _env path field _mty =
 (* TODO optimize traversal in case of multiple enrichment *)
 
 and enrich_modtype ~env eq mty =
-  try enrich_modtype_raw ~env eq mty with
+  try Core (enrich_modtype_raw ~env eq mty) with
   | Enrichment_fail -> error @@ Invalid_enrichment (eq, mty)
 
 and enrich_modtype_raw ~env eq mty = match mty with
@@ -108,14 +108,14 @@ and enrich_type_decl ~env eq field tydecl = match eq with
 and enrich_module_decl ~env eq field mty = match eq with
   | Module ([],_) | Type ([],_) -> assert false
   | Module ([field'], refined_mty) when String.equal field field' ->
-    let _ = subtype_modtype env refined_mty mty in
+    check_subtype_modtype env refined_mty mty ;
     refined_mty
   | Module (field'::rest, refined_mty) when String.equal field field' ->
     let eq = Module (rest, refined_mty) in
-    Enrich (mty, eq)
+    enrich_modtype ~env eq mty
   | Type (field'::rest, refined_ty) when String.equal field field' ->
     let eq = Type (rest, refined_ty) in
-    Enrich (mty, eq)
+    enrich_modtype ~env eq mty
   | _ -> mty
 
 (** Subtyping *)
@@ -123,6 +123,10 @@ and enrich_module_decl ~env eq field mty = match eq with
 and subtype_modtype env mty1 mty2 =
   try subtype_modtype_op env mty1 mty2 with
   | Ascription_fail -> error (Not_a_subtype (mty1, mty2))
+
+and check_subtype_modtype env mty1 mty2 =
+  let (_ : Modules.mod_type_core) = subtype_modtype env mty1 mty2 in
+  ()
 
 and subtype_modtype_op env mty1 mty2 =
   match mty1, mty2 with
@@ -141,7 +145,7 @@ and subtype_modtype_core env mty1 mty2 =
     subtype_modtype env (Core mty1) mty2
   | Functor_type (param1, param_mty1, body1),
     Functor_type (param2, param_mty2, body2) ->
-    let _ = subtype_modtype env param_mty2 param_mty1 in
+    check_subtype_modtype env param_mty2 param_mty1 ;
     let body1 =
       let subst = Subst.add_module param1 (Id param2) Subst.identity in
       Subst.mod_type subst body1
@@ -153,21 +157,21 @@ and subtype_modtype_core env mty1 mty2 =
     Alias (Ascription (path2, mty2)) ->
     check_equiv_mod_path env path1 path2;
     let mty = subtype_modtype env (Env.lookup_module env path1) mty1 in
-    let _ = subtype_modtype env (Core mty) mty2 in
+    check_subtype_modtype env (Core mty) mty2 ;
     Alias (Ascription (path2, mty2))
   | Alias (Ascription (path1, mty1)),
     Alias path2 ->
     check_equiv_mod_path env path1 path2;
     let mty = subtype_modtype env (Env.lookup_module env path1) mty1 in
-    let _ = subtype_modtype env (Core mty) (Env.lookup_module env path2) in
+    check_subtype_modtype env (Core mty) (Env.lookup_module env path2) ;
     Alias path2
   | Alias path1, Alias path2 ->
     check_equiv_mod_path env path1 path2;
     Alias path2
   | Alias path1, _ ->
+    let mty1 = Env.lookup_module env path1 in
+    check_subtype_modtype env mty1 (Core mty2) ;
     Alias (Ascription (path1, Core mty2))
-    (* let mty1 = Env.lookup_module env path1 in
-     * subtype_modtype env mty1 (Core mty2) *)
   | Signature sig1, Signature sig2 ->
     Signature (subtype_signature env sig1 sig2)
   | _ -> raise Ascription_fail
@@ -274,48 +278,40 @@ and force : Env.t -> mod_type -> mod_type_core =
     enrich_modtype_raw ~env eq mty
   | Core mtyc -> mtyc
 
-and resolve : Env.t -> mod_path -> mod_type =
-  fun env p0 ->
-  let rec loop p = 
+and resolve
+  : Env.t -> mod_path -> mod_type
+  = fun env p ->
     let mty = Env.lookup_module env p in
     match force env mty with
-    | Alias p -> loop p
-    | mtyc -> strengthen_modtype_core env p0 mtyc
-  in
-  loop p0
+    | Alias p -> resolve env p
+    | mtyc -> strengthen_modtype env p (Core mtyc)
 
-and normalize  : Env.t -> mod_path -> mod_path =
-  fun env p0 ->
-  let rec loop p = 
+and normalize
+  : Env.t -> mod_path -> mod_path
+  = fun env p ->
     let mty = Env.lookup_module env p in
     match force env mty with
-    | Alias p -> loop p
+    | Alias p -> normalize env p
     | _ -> p
-  in
-  loop p0
 
 and normalize_type
   : Env.t -> Modules.path -> Modules.path
-  = fun env p0 ->
-    let rec loop p = 
-      let tydecl = Env.lookup_type env p in
-      match tydecl.manifest with
-      | Some p -> loop p
-      | None -> p
-    in
-    loop p0
+  = fun env p ->
+    let tydecl = Env.lookup_type env p in
+    match tydecl.manifest with
+    | Some p -> normalize_type env p
+    | None -> p
 
-and shape : Env.t -> mod_type -> _ =
-  fun env mty ->
-  let rec loop mty =
+and shape
+  : Env.t -> mod_type -> _
+  = fun env mty ->
     let mtyc = force env mty in
     match mtyc with
-    | TPath p -> loop @@ Env.lookup_module_type env p
-    | Alias p -> loop @@ resolve env p
+    | TPath p -> shape env @@ Env.lookup_module_type env p
+    | Alias p -> shape env @@ resolve env p
     | Signature s -> `Signature s
     | Functor_type (p, m, b) -> `Functor_type (p, m, b)
-  in
-  loop mty
+
 
 (** Errors *)
   
