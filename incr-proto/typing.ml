@@ -103,7 +103,7 @@ and transl_mod_path_internal : Env.t -> mod_term -> M.mod_path =
     | Ascription (m, mty) ->
       let m = as_path env m in
       let mty = transl_modtype env mty in
-      M.Ascription (m, mty)
+      Op.subtype_path env m (Op.force env mty)
     | Apply (f, m) -> 
       let m = as_path env m in
       let f = as_path env f in
@@ -165,6 +165,10 @@ and transl_modtype env = function
     in
     let mty = transl_modtype env mty in
     Op.enrich_modtype ~env enrich mty
+  | Ascription_sig (mty1, mty2) ->
+    let mty1 = transl_modtype env mty1 in
+    let mty2 = transl_modtype env mty2 in
+    Core (Op.subtype_modtype env mty1 mty2)
 
 and transl_signature env { sig_self; sig_content } =
   let sig_final =
@@ -228,17 +232,17 @@ let prepare_error = function
   | Unbound_type p ->
     Report.errorf "Unbound type %a" Printer.path p
   | Not_a_functor mty ->
-    Report.errorf "This module cannot be applied. It as type:@ %a"
+    Report.errorf "This module cannot be applied. It as type:@,%a"
       Printer.module_type mty
   | Not_a_signature mty ->
-    Report.errorf "This module is not a signature. It as type:@ %a"
+    Report.errorf "This module is not a signature. It as type:@,%a"
       Printer.module_type mty
-  | Not_a_mod_path mty ->
-    Report.errorf "This module is not a module path. It as type:@ %a"
-      Printer.Untyped.module_term mty
-  | Not_a_path mty ->
-    Report.errorf "This module is not a path. It as type:@ %a"
-      Printer.Untyped.path mty
+  | Not_a_mod_path m ->
+    Report.errorf "This module is not a module path:@,%a"
+      Printer.Untyped.module_term m
+  | Not_a_path m ->
+    Report.errorf "This module is not a path:@,%a"
+      Printer.Untyped.path m
 
 let () = Report.register_report_of_exn @@ function
   | Error e -> Some (prepare_error e)

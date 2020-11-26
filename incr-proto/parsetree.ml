@@ -21,6 +21,8 @@ and mod_type =
   (** let X : mty in mty *)
   | Enrich of mod_type * enrichment
   (** (mty with C) *)
+  | Ascription_sig of mod_type * mod_type
+  (** (mty <: mty) *)
 
 and enrichment =
   | Module of field list * mod_type (** X.Y.Z : M *)

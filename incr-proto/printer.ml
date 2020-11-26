@@ -20,6 +20,11 @@ and module_path : _ -> mod_path -> unit =
 and module_type fmt = function
   | Strengthen (mty, p) ->
     Fmt.pf fmt "@[%a/%a@]" module_type mty module_path p
+  | Let (id, Core (Alias p), mty2) ->
+    Fmt.pf fmt "@[@[<2>@[<2>let@ %a@ =@]@ %a@]@ in@ %a@]"
+      ident id
+      module_path p
+      module_type mty2
   | Let (id, mty1, mty2) ->
     Fmt.pf fmt "@[@[<2>@[<2>let@ %a@ =@]@ %a@]@ in@ %a@]"
       ident id
@@ -45,11 +50,11 @@ and mod_type_core fmt = function
   | TPath p -> path fmt p
   | Alias p -> Fmt.pf fmt "@[(= %a)@]" module_path p
   | Signature s ->
-    Fmt.pf fmt "@[<hov>@[<hov 2>sig (%a)%a@]@ end@]"
+    Fmt.pf fmt "@[<hv 2>sig (%a)%a@;<1 -2>end@]"
       ident s.sig_self
       signature_content s
   | Functor_type (id, param, body) ->
-    Fmt.pf fmt "@[<hov2>@[(%a@ :@ %a)@ ->@]@ %a@]"
+    Fmt.pf fmt "@[<hv2>@[(%a@ :@ %a)@ ->@]@ %a@]"
       ident id
       module_type param
       module_type body
@@ -75,7 +80,7 @@ and module_declaration fmt name mty = match mty with
       name
       module_path p
   | Core (Signature s) -> 
-    Fmt.pf fmt "@[<v>@[<v 2>module %s : sig (%a)%a@]@ end@]"
+    Fmt.pf fmt "@[<hv 2>module %s : sig (%a)%a@;<1 -2>end@]"
       name
       ident s.sig_self
       signature_content s
@@ -118,7 +123,7 @@ module Untyped = struct
           str_self
           (Fmt.list ~sep:Fmt.cut structure_item) str_content
       | Functor (id, param, body) ->
-        Fmt.pf fmt "@[<hov2>@[(%s@ :@ %a)@ ->@]@ %a@]"
+        Fmt.pf fmt "@[<hv2>@[(%s@ :@ %a)@ ->@]@ %a@]"
           id
           module_type param
           module_term body
@@ -149,10 +154,14 @@ module Untyped = struct
         sig_self
         (Fmt.list ~sep:Fmt.cut signature_item) sig_content
     | Functor_type (id, param, body) ->
-      Fmt.pf fmt "@[<hov2>@[(%s@ :@ %a)@ ->@]@ %a@]"
+      Fmt.pf fmt "@[<hv2>@[(%s@ :@ %a)@ ->@]@ %a@]"
         id
         module_type param
         module_type body
+    | Ascription_sig (mty1, mty2) ->
+      Fmt.pf fmt "@[<hov2>(%a@ <:@ %a)@]"
+        module_type mty1
+        module_type mty2
   
   and signature_item fmt = function
     | Value_sig (field, ty) ->

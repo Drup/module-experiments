@@ -463,22 +463,28 @@ module_type:
       { unclosed "sig" $loc($1) "end" $loc($3) }
   | FUNCTOR args = functor_args
     MINUSGREATER mty = module_type
-      %prec below_WITH
       { List.fold_left
           (fun acc (id,mty) -> Functor_type (id, mty, acc))
           mty args
       }
   | LPAREN module_type RPAREN
-      { $2 }
+    { $2 }
+  | path = longident_in_types DOT field = UIDENT
+    { TPath{ path ; field } }
+  | m = module_type WITH cstrs = with_constraint
+    { Enrich(m, cstrs) }
+  | LPAREN EQUAL m = mod_ext_longident RPAREN
+    { Alias m }
+  | LPAREN mty1 = module_type LESSERCOLON mty2 = module_type RPAREN
+    { Ascription_sig (mty1, mty2) }
   | LPAREN module_type error
       { unclosed "(" $loc($1) ")" $loc($3) }
-  | mty_longident
-      { TPath $1 }
-  | m = module_type WITH cstrs = with_constraint
-      { Enrich(m, cstrs) }
-  | LPAREN EQUAL m = mod_longident RPAREN
-      { Alias m }
+  | LPAREN EQUAL mod_ext_longident error
+      { unclosed "(" $loc($1) ")" $loc($4) }
+  | LPAREN module_type LESSERCOLON module_type error
+      { unclosed "(" $loc($1) ")" $loc($5) }
 ;
+
 (* A signature, which appears between SIG and END (among other places),
    is a list of signature elements. *)
 signature:

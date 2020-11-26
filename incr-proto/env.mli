@@ -19,10 +19,10 @@ val fold_with:
   t -> 'a list ->
   Modules.signature
 
-val lookup_value: t -> Modules.path -> Core_types.val_type
-val lookup_type: t -> Modules.path -> Modules.type_decl
-val lookup_module: t -> Modules.mod_path -> Modules.mod_type
-val lookup_module_type: t -> Modules.path -> Modules.mod_type
+val lookup_value: t -> Modules.path -> Core_types.val_type option
+val lookup_type: t -> Modules.path -> Modules.type_decl option
+val lookup_module: t -> Modules.mod_path -> Modules.mod_type option
+val lookup_module_type: t -> Modules.path -> Modules.mod_type option
 
 val find_root_module : t -> Parsetree.name -> Ident.t option
 

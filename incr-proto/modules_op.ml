@@ -2,7 +2,11 @@ open Peyhel
 open Modules
 
 type error =
+  | Unbound_module of mod_path
+  | Unbound_module_type of path
+  | Unbound_type of path
   | Not_a_subtype of mod_type * mod_type
+  | Path_not_included of mod_path * mod_type
   | Cannot_eliminate_let of Modules.mod_type
   | Invalid_enrichment of Modules.enrichment * Modules.mod_type
 
@@ -31,7 +35,7 @@ let rec strengthen_modtype env path mty = match mty with
 
 and strengthen_modtype_core env path mty = match mty with
   | TPath mtp ->
-    let mty = Env.lookup_module_type env mtp in
+    let mty = resolve_modtype env mtp in
     strengthen_modtype env path mty
   | Alias (_p) -> (* TOCHECK *)
     Core (Alias (path))
@@ -80,7 +84,8 @@ and enrich_modtype_raw ~env eq mty = match mty with
 
 and enrich_modtype_core ~env eq mtyc = match mtyc with
   | TPath p ->
-    enrich_modtype_raw ~env eq @@ Env.lookup_module_type env p
+    let mty = resolve_modtype env p in
+    enrich_modtype_raw ~env eq mty
   | Alias p ->
     (* XXX memoize *)
     let _ = enrich_modtype_raw ~env eq @@ resolve env p in
@@ -137,11 +142,13 @@ and subtype_modtype_op env mty1 mty2 =
 
 and subtype_modtype_core env mty1 mty2 =
   match mty1, mty2 with
+  | Alias p, mty ->
+    Alias (subtype_path env p mty)
   | TPath p1, _ ->
-    let mty1 = Env.lookup_module_type env p1 in
+    let mty1 = resolve_modtype env p1 in
     subtype_modtype env mty1 (Core mty2)
   | _, TPath p2 ->
-    let mty2 = Env.lookup_module_type env p2 in
+    let mty2 = resolve_modtype env p2 in
     subtype_modtype env (Core mty1) mty2
   | Functor_type (param1, param_mty1, body1),
     Functor_type (param2, param_mty2, body2) ->
@@ -153,29 +160,52 @@ and subtype_modtype_core env mty1 mty2 =
     let env = Env.add_module param2 param_mty2 env in
     let body = subtype_modtype env body1 body2 in
     Functor_type (param1, param_mty2, Core body)
-  | Alias (Ascription (path1, mty1)),
-    Alias (Ascription (path2, mty2)) ->
-    check_equiv_mod_path env path1 path2;
-    let mty = subtype_modtype env (Env.lookup_module env path1) mty1 in
-    check_subtype_modtype env (Core mty) mty2 ;
-    Alias (Ascription (path2, mty2))
-  | Alias (Ascription (path1, mty1)),
-    Alias path2 ->
-    check_equiv_mod_path env path1 path2;
-    let mty = subtype_modtype env (Env.lookup_module env path1) mty1 in
-    check_subtype_modtype env (Core mty) (Env.lookup_module env path2) ;
-    Alias path2
-  | Alias path1, Alias path2 ->
-    check_equiv_mod_path env path1 path2;
-    Alias path2
-  | Alias path1, _ ->
-    let mty1 = Env.lookup_module env path1 in
-    check_subtype_modtype env mty1 (Core mty2) ;
-    Alias (Ascription (path1, Core mty2))
   | Signature sig1, Signature sig2 ->
     Signature (subtype_signature env sig1 sig2)
   | _ -> raise Ascription_fail
-  
+
+and is_no_alias : mod_type_core -> bool = function
+  | Alias _ -> false
+  | TPath _ | Functor_type _ | Signature _ -> true
+
+(* We build a *canonical* path with the ascription.
+   
+   Invariant: 
+   The left hand side of the ascription is a shape: either a signature
+   or a functor.
+   It must not contain aliases (or paths that could lead to an alias).
+   TODO: Split path subtyping into "canonical" and "resolving" to not 
+   need that invariant
+*)
+and subtype_path env path0 mty0 =
+  match path0, mty0 with
+  | Ascription (path1, mty1),
+    Alias (Ascription (path2, mty2)) ->
+    assert (is_no_alias @@ force env mty2);
+    check_equiv_mod_path env path1 path2;
+    let mty = subtype_modtype env (resolve env path1) mty1 in
+    check_subtype_modtype env (Core mty) mty2 ;
+    Ascription (path2, mty2)
+  | path1,
+    Alias (Ascription (path2, mty2)) ->
+    check_equiv_mod_path env path1 path2;
+    subtype_path env path2 (force env mty2)
+  | Ascription (path1, mty1),
+    Alias path2 ->
+    check_equiv_mod_path env path1 path2;
+    let mty = subtype_modtype env (resolve env path1) mty1 in
+    check_subtype_modtype env (Core mty) (resolve env path2) ;
+    path2
+  | path1, Alias path2 ->
+    check_equiv_mod_path env path1 path2;
+    path2
+  | path, TPath mtyp ->
+    let mty = force env @@ resolve_modtype env mtyp in
+    subtype_path env path mty
+  | path1, (Signature _ | Functor_type _ as mty2) ->
+    let mty1 = resolve env path1 in
+    check_subtype_modtype env mty1 (Core mty2) ;
+    Ascription (path1, Core mty2)
 
 and subtype_signature env sig1 sig2 =
   let id = Ident.create (Ident.name sig1.sig_self) in
@@ -281,15 +311,28 @@ and force : Env.t -> mod_type -> mod_type_core =
 and resolve
   : Env.t -> mod_path -> mod_type
   = fun env p ->
-    let mty = Env.lookup_module env p in
+    let mty = match Env.lookup_module env p with
+      | Some m -> m
+      | None -> error @@ Unbound_module p
+    in
     match force env mty with
     | Alias p -> resolve env p
     | mtyc -> strengthen_modtype env p (Core mtyc)
 
+and resolve_modtype
+  : Env.t -> path -> mod_type
+  = fun env p ->
+    match Env.lookup_module_type env p with
+    | Some m -> m
+    | None -> error @@ Unbound_module_type p
+
 and normalize
   : Env.t -> mod_path -> mod_path
   = fun env p ->
-    let mty = Env.lookup_module env p in
+    let mty = match Env.lookup_module env p with
+      | Some m -> m
+      | None -> error @@ Unbound_module p
+    in
     match force env mty with
     | Alias p -> normalize env p
     | _ -> p
@@ -297,7 +340,10 @@ and normalize
 and normalize_type
   : Env.t -> Modules.path -> Modules.path
   = fun env p ->
-    let tydecl = Env.lookup_type env p in
+    let tydecl = match Env.lookup_type env p with
+      | Some m -> m
+      | None -> error @@ Unbound_type p
+    in
     match tydecl.manifest with
     | Some p -> normalize_type env p
     | None -> p
@@ -307,10 +353,17 @@ and shape
   = fun env mty ->
     let mtyc = force env mty in
     match mtyc with
-    | TPath p -> shape env @@ Env.lookup_module_type env p
+    | TPath p -> shape env @@ resolve_modtype env p
     | Alias p -> shape env @@ resolve env p
     | Signature s -> `Signature s
     | Functor_type (p, m, b) -> `Functor_type (p, m, b)
+
+let subtype_path env path mty =
+  let p =
+    try subtype_path env path mty with
+    | Ascription_fail -> error @@ Path_not_included (path, Core mty)
+  in
+  p
 
 
 (** Errors *)
@@ -321,6 +374,11 @@ let prepare_error = function
       "@[<v>@[<v2>The module@ @[%a@]@]@,@[<v2>is not included in@ @[%a@]@]@]"
       Printer.module_type mty1
       Printer.module_type mty2
+  | Path_not_included (path, mty) ->
+    Report.errorf
+      "@[<v>@[<hov>The path@ %a@]@,@[<v2>is not included in@ @[%a@]@]@]"
+      Printer.module_path path
+      Printer.module_type mty
   | Cannot_eliminate_let mty ->
     Report.errorf
       "@[<v 2>Cannot eliminate let in the module type@,@[%a@]@]"
@@ -330,6 +388,12 @@ let prepare_error = function
       "@[<v 2>The enrichment @[%a@] cannot be applied to module@ @[%a@]@]"
       Printer.enrichment eq
       Printer.module_type mty
+  | Unbound_module p ->
+    Report.errorf "Unbound module %a" Printer.module_path p
+  | Unbound_module_type p ->
+    Report.errorf "Unbound module type %a" Printer.path p
+  | Unbound_type p ->
+    Report.errorf "Unbound type %a" Printer.path p
 
 let () = Report.register_report_of_exn @@ function
   | Error e -> Some (prepare_error e)

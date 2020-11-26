@@ -12,13 +12,9 @@ let identity : t = {
   (* module_types = Ident.Map.empty ; *)
 }
 
-(* let add_type p v sub =
- *   {sub with types = Ident.Map.add p v sub.types } *)
 let add_module p v sub =
-  (* {sub with modules = Ident.Map.add p v sub.modules } *)
-  { modules = Ident.Map.add p v sub.modules }
-(* let add_module_type p v sub =
- *   {sub with module_types = Ident.Map.add p v sub.module_types } *)
+  if Id p = v then sub else
+    { modules = Ident.Map.add p v sub.modules }
 
 let val_type sub (decl : Core_types.val_type) = Core_subst.val_type sub decl
 

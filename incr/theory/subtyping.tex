@@ -37,6 +37,14 @@
     {\Salias{\Stransp{\iP'}{\iM'}}} }
   \and
   \inferrule
+  { \Onormalize{\E}{\iP} = \Onormalize{\E}{\iP'} \\
+    \submod{\E}{\iM''}{\iM'}{\_}
+  }
+  { \submod{\E}
+    {\Salias{\iP}}{\Salias{\Stransp{\iP'}{\iM'}}}
+    {\Salias{\Stransp{\iP'}{\iM'}}} }
+  \and
+  \inferrule
   { \subpath{\E}{\iP}{\iP'} \\
     \submod{\E}{\resolve{\E}{\iP}}{\iM}{\iM''} \\
     \submod{\E}{\iM''}{\resolve{\E}{\iP}}{\_}

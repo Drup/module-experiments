@@ -167,12 +167,17 @@ let rec lookup_module : t -> Modules.mod_path -> _
       let mty = !compute_functor_app env ~f:mty_f ~arg:path_arg in
       mty
 
-let lookup : type a . a key -> t -> Modules.path -> a
+let lookup : type a . a key -> t -> Modules.path -> a option
   = fun key env {Modules. path ; field } ->
-    let path_mty = lookup_module env path in
-    let s = !compute_signature env path_mty in
-    lookup_in_sig ~key path field s
+    try 
+      let path_mty = lookup_module env path in
+      let s = !compute_signature env path_mty in
+      let v = lookup_in_sig ~key path field s in
+      Some v
+    with
+    | Not_found -> None
 
+let lookup_module env p = try Some (lookup_module env p) with Not_found -> None
 let lookup_value = lookup Value
 let lookup_type = lookup Type
 let lookup_module_type = lookup Module_type
