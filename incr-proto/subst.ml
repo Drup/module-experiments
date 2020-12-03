@@ -27,8 +27,11 @@ let rec type_decl sub (decl : Modules.type_decl) : Modules.type_decl =
       | Some p -> Some (path sub p)
   }
 
-and path sub {Modules. path ; field } =
+and proj sub {Modules. path ; field } =
   {path = mod_path sub path ; field }
+and path sub p = match p with
+  | PathId _id -> p
+  | PathProj p -> PathProj (proj sub p)
 
 and mod_path sub (p : mod_path) =
   match p with

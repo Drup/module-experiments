@@ -5,8 +5,8 @@ module Op = Modules_op
 
 type error =
   | Unbound_module of Parsetree.name
-  | Unbound_modtype of M.path
-  | Unbound_type of M.path
+  | Unbound_module_type of Parsetree.path
+  | Unbound_type of Parsetree.path
   | Not_a_functor of M.mod_type
   | Not_a_signature of M.mod_type
   | Not_a_mod_path of mod_path
@@ -73,11 +73,11 @@ and type_definition env = function
   | Type_str(id, { manifest; definition }) ->
     let manifest =
       let f ty =
-        let ty = transl_path env ty in
-        begin try ignore @@ Env.lookup_type env ty with
+        let ty' = transl_module_type_path env ty in
+        begin try ignore @@ Env.lookup_type env ty' with
           | Not_found -> error @@ Unbound_type ty
         end;
-        ty
+        ty'
       in      
       Option.map f manifest
     in
@@ -92,7 +92,7 @@ and transl_mod_path_internal : Env.t -> mod_term -> M.mod_path =
   let rec as_path env m : M.mod_path = match m with
     | Id name ->
       let id =
-        match Env.find_root_module env name with
+        match Env.find_module env name with
         | Some id -> id
         | None -> error @@ Unbound_module name
       in    
@@ -125,21 +125,46 @@ and transl_mod_path env m =
   try transl_mod_path_internal env m with
   | Exit -> error @@ Not_a_mod_path m
 
-and transl_path env ({path ; field} as p) =
+and transl_type_path env p =
   try
-    let path = transl_mod_path_internal env path in
-    {M. path; field}
+    match p with
+    | PathId name ->
+      let id =
+        match Env.find_type env name with
+        | Some id -> id
+        | None -> error @@ Unbound_type p
+      in    
+      M.PathId id
+    | PathProj {path; field} -> 
+      let path = transl_mod_path_internal env path in
+      M.PathProj { path; field}
+  with
+  | Exit -> error @@ Not_a_path p
+
+and transl_module_type_path env p =
+  try
+    match p with
+    | PathId name ->
+      let id =
+        match Env.find_module_type env name with
+        | Some id -> id
+        | None -> error @@ Unbound_module_type p
+      in    
+      M.PathId id
+    | PathProj {path; field} -> 
+      let path = transl_mod_path_internal env path in
+      M.PathProj {path; field}
   with
   | Exit -> error @@ Not_a_path p
 
 and transl_modtype env = function
   | TPath p ->
-    let p = transl_path env p in
+    let p' = transl_module_type_path env p in
     begin
-      try ignore @@ Env.lookup_module_type env p with
-      | Not_found -> error @@ Unbound_modtype p
+      try ignore @@ Env.lookup_module_type env p' with
+      | Not_found -> error @@ Unbound_module_type p
     end;
-    M.Core (TPath p)
+    M.Core (TPath p')
   | Alias p ->
     let p = transl_mod_path env p in
     M.Core (Alias p)
@@ -188,11 +213,11 @@ and transl_signature_item env = function
   | Type_sig(id, { manifest; definition }) ->
     let manifest =
       let f ty =
-        let ty = transl_path env ty in
-        begin try ignore @@ Env.lookup_type env ty with
+        let ty' = transl_module_type_path env ty in
+        begin try ignore @@ Env.lookup_type env ty' with
           | Not_found -> error @@ Unbound_type ty
         end;
-        ty
+        ty'
       in      
       Option.map f manifest
     in
@@ -222,15 +247,22 @@ let () =
   Env.compute_signature := compute_signature;
   ()
 
+
+let type_item env item =
+  let i = type_definition env item in
+  let _, env = Env.intro_item i env in
+  i, env
+
+
 (** Errors *)
   
 let prepare_error = function
   | Unbound_module name ->
     Report.errorf "Unbound module %s" name
-  | Unbound_modtype p ->
-    Report.errorf "Unbound module type %a" Printer.path p
+  | Unbound_module_type p ->
+    Report.errorf "Unbound module type %a" Printer.Untyped.path p
   | Unbound_type p ->
-    Report.errorf "Unbound type %a" Printer.path p
+    Report.errorf "Unbound type %a" Printer.Untyped.path p
   | Not_a_functor mty ->
     Report.errorf "This module cannot be applied. It as type:@,%a"
       Printer.module_type mty

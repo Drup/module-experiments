@@ -7,7 +7,7 @@ include Peyhel.Make(struct
 
     let name = "incrml"
 
-    type input = Parsetree.structure
+    type input = Parsetree.structure_item list
     
     let options = []
 
@@ -20,19 +20,27 @@ include Peyhel.Make(struct
       !i < 1 || (str.[!i] <> ';' || str.[!i - 1] <> ';')
 
     let file_parser =
-      let f name lexbuf =
-        let modname = modname_of_filename name in
+      let f _name lexbuf =
         let r =
           Peyhel.Input.wrap (Parser.implementation Lexer.token) lexbuf
         in
-        {Parsetree.str_self = modname; str_content = r}
+        r
       in
       Some f
     let toplevel_parser = None
+
+    let expect_parser = 
+      let f _name lexbuf =
+        Peyhel.Input.wrap (Parser.expect_file Lexer.token) lexbuf        
+      in
+      Some ( "(*EXPECT", "*)", f)
     
-    let exec _import env c =
-      let s = Typing.type_structure env c in
-      Peyhel.Report.printf "%a@." Printer.interface s;
-      Env.add_module s.sig_self Modules.(Core (Signature s)) env
+    let exec fmt _import env l =
+      let f env i =
+        let i, env = Typing.type_item env i in
+        Peyhel.Report.fprintf fmt "%a@?" Printer.signature_item i;
+        env
+      in
+      List.fold_left f env l
 
   end)

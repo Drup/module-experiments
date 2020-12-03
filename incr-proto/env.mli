@@ -13,6 +13,8 @@ val intro_type: Parsetree.name -> Modules.type_decl -> t -> Ident.t * t
 val intro_module: Parsetree.name -> Modules.mod_type -> t -> Ident.t * t
 val intro_module_type: Parsetree.name -> Modules.mod_type -> t -> Ident.t * t
 
+val intro_item : Modules.signature_item -> t -> Ident.t * t
+
 val fold_with: 
   Parsetree.name ->
   (t -> 'a -> Modules.signature_item) ->
@@ -24,7 +26,10 @@ val lookup_type: t -> Modules.path -> Modules.type_decl option
 val lookup_module: t -> Modules.mod_path -> Modules.mod_type option
 val lookup_module_type: t -> Modules.path -> Modules.mod_type option
 
-val find_root_module : t -> Parsetree.name -> Ident.t option
+val find_module : t -> Parsetree.name -> Ident.t option
+val find_value : t -> Parsetree.name -> Ident.t option
+val find_type : t -> Parsetree.name -> Ident.t option
+val find_module_type : t -> Parsetree.name -> Ident.t option
 
 val compute_signature :
   (t -> Modules.mod_type -> Modules.signature) ref

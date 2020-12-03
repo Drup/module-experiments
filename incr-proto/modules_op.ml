@@ -57,7 +57,7 @@ and strengthen_signature env path
 
 and strengthen_type_decl _env path field _decl = 
   let new_decl = {
-    manifest = Some {path; field} ;
+    manifest = Some (PathProj {path; field}) ;
     definition = None ;
   }
   in

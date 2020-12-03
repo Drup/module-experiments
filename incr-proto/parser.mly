@@ -62,9 +62,10 @@ let () =
 %token STRUCT
 %token TYPE
 %token <string> UIDENT
-(* %token UNDERSCORE *)
+%token UNDERSCORE
 %token VAL
 %token WITH
+%token <string> EXPECT
 
 %left DOT
 %nonassoc below_WITH
@@ -84,32 +85,14 @@ let () =
 %type <Parsetree.structure_item list> toplevel_phrase
 %start use_file                         /* for the #use directive */
 %type <Parsetree.structure_item list> use_file
+%start expect_file
+%type <(Parsetree.structure_item list * int * int) list> expect_file
+
 %type <Parsetree.mod_term> mod_ext_longident
 
 %%
 
 /* Generic definitions */
-
-(* [iloption(X)] recognizes either nothing or [X]. Assuming [X] produces
-   an OCaml list, it produces an OCaml list, too. *)
-
-%inline iloption(X):
-  /* nothing */
-    { [] }
-| x = X
-    { [x] }
-
-(* [llist(X)] recognizes a possibly empty list of [X]s. It is left-recursive. *)
-
-reversed_llist(X):
-  /* empty */
-    { [] }
-| xs = reversed_llist(X) x = X
-    { x :: xs }
-
-%inline llist(X):
-  xs = rev(reversed_llist(X))
-    { xs }
 
 (* [reversed_nonempty_llist(X)] recognizes a nonempty list of [X]s, and produces
    an OCaml list in reverse order -- that is, the last element in the input text
@@ -285,6 +268,16 @@ use_file:
 %inline use_file_element:
  | structure_item
       { [$1] }
+;
+
+expect_file:
+  expect_item* EOF
+    { $1 }
+;
+
+%inline expect_item:
+  | l = structure_item+ EXPECT
+    { l, $endofs(l), $endofs($2) }
 ;
 
 (* -------------------------------------------------------------------------- *)
@@ -469,8 +462,8 @@ module_type:
       }
   | LPAREN module_type RPAREN
     { $2 }
-  | path = longident_in_types DOT field = UIDENT
-    { TPath{ path ; field } }
+  | mty_longident
+    { TPath $1 }
   | m = module_type WITH cstrs = with_constraint
     { Enrich(m, cstrs) }
   | LPAREN EQUAL m = mod_ext_longident RPAREN
@@ -661,7 +654,8 @@ fields(final):
 ;
 
 %inline mk_longident(prefix,final):
-  | prefix DOT final { {path = $1 ; field = $3} }
+  | final            { PathId $1 }
+  | prefix DOT final { PathProj {path = $1 ; field = $3} }
 ;
 longident_in_values:
   | UIDENT            { Id $1 }
@@ -680,10 +674,10 @@ longident_in_types:
       { expecting $loc($3) "module path" }
 ;
 mod_longident:
-    mk_longident(longident_in_values,ident) { Proj $1 }
+    longident_in_values { $1 }
 ;
 mod_ext_longident:
-    mk_longident(longident_in_types,ident) { Proj $1 }
+    longident_in_types { $1 }
 ;
 mty_longident:
     mk_longident(longident_in_types,ident) { $1 }

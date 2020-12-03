@@ -31,7 +31,7 @@ let map (type a) (k : a key) (f : a Ident.tbl -> a Ident.tbl) env =
   | Value -> { env with values = f env.values }
   | Type -> { env with types = f env.types }
   | Module -> { env with modules = f env.modules }
-  | Module_type -> { env with module_types = env.module_types }
+  | Module_type -> { env with module_types = f env.module_types }
 
 type error =
   | Already_defined of Modules.signature_item
@@ -106,6 +106,16 @@ let intro_type = intro Type
 let intro_module = intro Module
 let intro_module_type = intro Module_type
 
+let intro_item item env = match item with
+  | Modules.Value_sig (field, decl) ->
+    intro Value field decl env
+  | Type_sig (field, decl) ->
+    intro Type field decl env
+  | Module_sig (field, decl) ->
+    intro Module field decl env
+  | Module_type_sig (field, decl) ->
+    intro Module_type field decl env
+
 let lookup_in_env
   : type a . key:a key -> _ -> _ -> a
   = fun ~key id env ->
@@ -168,12 +178,17 @@ let rec lookup_module : t -> Modules.mod_path -> _
       mty
 
 let lookup : type a . a key -> t -> Modules.path -> a option
-  = fun key env {Modules. path ; field } ->
-    try 
-      let path_mty = lookup_module env path in
-      let s = !compute_signature env path_mty in
-      let v = lookup_in_sig ~key path field s in
-      Some v
+  = fun key env p ->
+    try
+      match p with
+      | PathId id ->
+        let v = lookup_in_env ~key id env in
+        Some v
+      | PathProj { path ; field } ->
+        let path_mty = lookup_module env path in
+        let s = !compute_signature env path_mty in
+        let v = lookup_in_sig ~key path field s in
+        Some v
     with
     | Not_found -> None
 
@@ -182,12 +197,16 @@ let lookup_value = lookup Value
 let lookup_type = lookup Type
 let lookup_module_type = lookup Module_type
 
-let find_root_module env id =
+let find key env id =
   try 
-    let id, _ = Ident.Map.find id (select Module env) in
+    let id, _ = Ident.Map.find id (select key env) in
     Some id
   with Not_found -> None
 
+let find_module = find Module
+let find_value = find Value
+let find_type = find Type
+let find_module_type = find Module_type
 
 (** Errors *)
   

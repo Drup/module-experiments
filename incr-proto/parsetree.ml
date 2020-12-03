@@ -44,7 +44,11 @@ and signature_item =
 
 and mod_path = mod_term
 
-and path = {
+and path =
+  | PathId of string
+  | PathProj of proj
+
+and proj = {
   path : mod_path ;
   field : field ;
 }
@@ -52,7 +56,7 @@ and path = {
 and mod_term =
   | Id : string -> mod_term
   (** X *)
-  | Proj : path -> mod_term
+  | Proj : proj -> mod_term
   (** P.X *)
   | Ascription : mod_term * mod_type -> mod_term
   (** (mod <: mty) *)

@@ -88,13 +88,16 @@ rule token = parse
         token lexbuf }
   | blank +
       { token lexbuf }
-  (* | "_"
-   *     { UNDERSCORE } *)
+  | "_"
+      { UNDERSCORE }
   | lowercase identchar * as name
       { try Hashtbl.find keyword_table name
         with Not_found -> LIDENT name }
   | uppercase identchar * as name
       { UIDENT name }
+  | "(*EXPECT"
+    { let s = wrap_comment_lexer comment lexbuf in
+     EXPECT s }
   | "(*" | "(**"
       { let _ = wrap_comment_lexer comment lexbuf in
         token lexbuf }

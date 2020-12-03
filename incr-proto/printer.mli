@@ -5,7 +5,7 @@ val module_path : Modules.mod_path Fmt.t
 val enrichment : Modules.enrichment Fmt.t
 val module_type : Modules.mod_type Fmt.t
 
-val interface : Modules.signature Fmt.t
+val signature_item : Modules.signature_item Fmt.t
 
 module Untyped : sig
   val path : Parsetree.path Fmt.t

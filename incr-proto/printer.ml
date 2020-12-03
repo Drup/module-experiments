@@ -3,7 +3,11 @@ open Modules
 let fields f m fmt =
   FieldMap.iter (fun k d -> Fmt.sp fmt () ; f fmt k d) m
 
-let rec path fmt { path ; field } =
+let rec path fmt = function
+  | PathId id -> ident fmt id
+  | PathProj p -> proj fmt p
+
+and proj fmt { path ; field } =
   Fmt.pf fmt "@[<h>%a.%s@]" module_path path field
 
 and ident fmt id = Fmt.string fmt (Ident.name id)
@@ -11,7 +15,7 @@ and ident fmt id = Fmt.string fmt (Ident.name id)
 and module_path : _ -> mod_path -> unit =
   fun fmt mdt -> match mdt with
     | Id id -> ident fmt id
-    | Proj p -> path fmt p
+    | Proj p -> proj fmt p
     | Ascription (md, mty) ->
       Fmt.pf fmt "@[<2>(%a@ <:@ %a)@]" module_path md module_type mty
     | Apply (md1, md2) ->
@@ -101,19 +105,26 @@ and type_decl fmt { manifest ; definition } =
       path p
       Core_printer.def_type def
 
-and interface fmt s = 
-  Fmt.pf fmt "@[<v>%a@]@." signature_content s
+and signature_item fmt (item : Modules.signature_item) = match item with
+  | Value_sig (n, d) -> value_declaration fmt n d
+  | Type_sig (n, d) -> type_declaration fmt n d
+  | Module_sig (n, d) -> module_declaration fmt n d
+  | Module_type_sig (n, d) -> module_type_declaration fmt n d
 
 module Untyped = struct
   open Parsetree
   
-  let rec path fmt { path ; field } =
+  let rec path fmt = function
+    | PathId id -> Fmt.string fmt id
+    | PathProj p -> proj fmt p
+
+  and proj fmt { path ; field } =
     Fmt.pf fmt "@[<h>%a.%s@]" module_term path field
 
   and module_term : _ -> mod_term -> unit =
     fun fmt mt -> match mt with
       | Id id -> Fmt.string fmt id
-      | Proj p -> path fmt p
+      | Proj p -> proj fmt p
       | Ascription (mt, mty) ->
         Fmt.pf fmt "@[<2>(%a@ <:@ %a)@]" module_term mt module_type mty
       | Apply (md1, md2) ->

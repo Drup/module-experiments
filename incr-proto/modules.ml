@@ -56,15 +56,16 @@ and signature_item =
 
 and mod_path = pure mod_term
 
-and path = {
-  path : mod_path ;
-  field : field ;
-}
+and path =
+  | PathId of Ident.t
+  | PathProj of proj
+
+and proj = { path : mod_path ; field : field }
 
 and _ mod_term =
   | Id : Ident.t -> pure mod_term
   (** X *)
-  | Proj : path -> pure mod_term
+  | Proj : proj -> pure mod_term
   (** P.X *)
   | Ascription : 'a mod_term * mod_type -> 'a mod_term
   (** (mod <: mty) *)
