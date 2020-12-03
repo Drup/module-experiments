@@ -673,6 +673,14 @@ longident_in_types:
   | longident_in_types LPAREN error
       { expecting $loc($3) "module path" }
 ;
+longident_in_module_types:
+  | UIDENT            { Id $1 }
+  | longident_in_module_types DOT UIDENT { Proj{ path = $1 ; field = $3 } }
+  | longident_in_module_types LPAREN longident_in_types RPAREN
+      { Apply ($1, $3) }
+  | longident_in_module_types LPAREN error
+      { expecting $loc($3) "module path" }
+;
 mod_longident:
     longident_in_values { $1 }
 ;
@@ -680,7 +688,7 @@ mod_ext_longident:
     longident_in_types { $1 }
 ;
 mty_longident:
-    mk_longident(longident_in_types,ident) { $1 }
+    mk_longident(longident_in_module_types,ident) { $1 }
 ;
 type_longident:
     mk_longident(longident_in_types,LIDENT) { $1 }
