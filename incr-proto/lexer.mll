@@ -1,7 +1,6 @@
 (* The lexer definition *)
 
 {
-open Peyhel
 open Parser
 
 type Input.Lex.error +=
@@ -110,7 +109,7 @@ rule token = parse
   | "="  { EQUAL }
   | eof { EOF }
   | (_ as illegal_char)
-      { error lexbuf (Peyhel.Input.Lex.Illegal_character illegal_char) }
+      { error lexbuf (Peahell.Input.Lex.Illegal_character illegal_char) }
 
 and comment = parse
     "(*"

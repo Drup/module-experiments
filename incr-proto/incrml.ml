@@ -3,7 +3,7 @@ let modname_of_filename s =
   Filename.chop_extension |>
   String.capitalize_ascii  
 
-include Peyhel.Make(struct
+include Peahell.Make(struct
 
     let name = "incrml"
 
@@ -22,7 +22,7 @@ include Peyhel.Make(struct
     let file_parser =
       let f _name lexbuf =
         let r =
-          Peyhel.Input.wrap (Parser.implementation Lexer.token) lexbuf
+          Peahell.Input.wrap (Parser.implementation Lexer.token) lexbuf
         in
         r
       in
@@ -31,14 +31,14 @@ include Peyhel.Make(struct
 
     let expect_parser = 
       let f _name lexbuf =
-        Peyhel.Input.wrap (Parser.expect_file Lexer.token) lexbuf        
+        Peahell.Input.wrap (Parser.expect_file Lexer.token) lexbuf        
       in
       Some ( "(*EXPECT", "*)", f)
     
     let exec fmt _import env l =
       let f env i =
         let i, env = Typing.type_item env i in
-        Peyhel.Report.fprintf fmt "%a@?" Printer.signature_item i;
+        Peahell.Report.fprintf fmt "%a@?" Printer.signature_item i;
         env
       in
       List.fold_left f env l

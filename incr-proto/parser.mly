@@ -2,8 +2,7 @@
 
 %{
 
-open Peyhel
-open Peyhel.Input.Parse
+open Input.Parse
 open Parsetree
    
 let make_loc (startpos, endpos) = Location.Location (startpos, endpos)

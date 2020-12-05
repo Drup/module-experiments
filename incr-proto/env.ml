@@ -1,5 +1,3 @@
-open Peyhel
-
 type t = {
   values : Core_types.val_type Ident.tbl ;
   types : Modules.type_decl Ident.tbl ;

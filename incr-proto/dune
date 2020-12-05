@@ -1,14 +1,15 @@
 (library
  (name incrml)
  (modules :standard \ main)
- (libraries fmt containers rresult peyhel)
+ (libraries fmt containers rresult peahell)
+ (flags -open Peahell)
 )
 
 (executable
  (name main)
  (public_name incrml)
  (modules main)
- (libraries incrml peyhel.native)
+ (libraries incrml peahell.native)
 ) 
 
 (ocamllex
