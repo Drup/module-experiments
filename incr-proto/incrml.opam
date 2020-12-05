@@ -1,0 +1,28 @@
+opam-version: "2.0"
+name: "incrml"
+maintainer: "Gabriel Radanne <drupyog@zoho.com>"
+authors: "Gabriel Radanne <drupyog@zoho.com>"
+homepage: "https://github.com/Drup/module-experiments"
+bug-reports: "https://github.com/Drup/module-experiments/issues"
+license: "MIT"
+dev-repo: "git+https://github.com/Drup/module-experiments.git"
+synopsis: "A toy typechecker for a ML-style module language"
+
+build: [
+  ["dune" "subst"]{pinned}
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
+]
+
+depends: [
+  "ocaml"
+  "dune" {build & >= "2.7"}
+  "fmt"
+  "containers"
+  "rresult"
+  "menhir"
+  "peahell"
+]
+pin-depends: [
+  "peahell.0.1" "git://github.com/Drup/peahell/"
+]
