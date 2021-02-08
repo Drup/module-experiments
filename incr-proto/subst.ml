@@ -57,8 +57,6 @@ and mod_type_core sub mty =
   | TPath p -> TPath p
   | Alias p ->
     Alias (mod_path sub p)
-  (* | Alias (p, Some mty) ->
-   *   Alias (mod_path sub p, Some (mod_type sub mty)) *)
   | Signature s ->
     Signature (signature sub s)
   | Functor_type(id, mty1, mty2) ->
