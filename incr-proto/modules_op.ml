@@ -41,7 +41,7 @@ and strengthen_modtype_core env path mty = match mty with
   | Signature sigs ->
     Core (Signature (strengthen_signature env path sigs))
   | Functor_type (param, param_mty, body_mty) ->
-    let path_for_body = Apply (path, Id param) in
+    let path_for_body = Apply (path, Path (PathId param)) in
     let body_mty = Strengthen (body_mty, path_for_body) in
     Core (Functor_type (param, param_mty, body_mty))
 
@@ -63,7 +63,7 @@ and strengthen_type_decl _env path field _decl =
   new_decl
 
 and strengthen_module_decl _env path field _mty =
-  Core (Alias (Proj {path; field}))
+  Core (Alias (Path (PathProj {path; field})))
 
 (** Enrichment *)
 (* TODO optimize traversal in case of multiple enrichment *)
@@ -153,7 +153,9 @@ and subtype_modtype_core env mty1 mty2 =
     Functor_type (param2, param_mty2, body2) ->
     check_subtype_modtype env param_mty2 param_mty1 ;
     let body1 =
-      let subst = Subst.add_module param1 (Id param2) Subst.identity in
+      let subst = Subst.add_module
+          param1 ((Path (PathId param2))) Subst.identity
+      in
       Subst.mod_type subst body1
     in
     let env = Env.add_module param2 param_mty2 env in
@@ -208,7 +210,7 @@ and subtype_path env path0 mty0 =
 
 and subtype_signature env sig1 sig2 =
   let id = Ident.create (Ident.name sig1.sig_self) in
-  let path = Id id in
+  let path = Path (PathId id) in
   let sig2 =
     let subst = Subst.add_module sig2.sig_self path Subst.identity in
     Subst.signature subst sig2

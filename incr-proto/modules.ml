@@ -14,8 +14,7 @@ and mod_type_core =
   | TPath of path
   (** X | P.X *)
   | Alias of mod_path
-  (** (= P)
-      (= P <: mty *)
+  (** (= P) *)
   | Signature of signature
   (** sig ... end *)
   | Functor_type of Ident.t * mod_type * mod_type
@@ -63,10 +62,8 @@ and path =
 and proj = { path : mod_path ; field : field }
 
 and _ mod_term =
-  | Id : Ident.t -> pure mod_term
-  (** X *)
-  | Proj : proj -> pure mod_term
-  (** P.X *)
+  | Path : path -> pure mod_term
+  (** X, P.X *)
   | Ascription : 'a mod_term * mod_type -> 'a mod_term
   (** (mod <: mty) *)
   | Apply : 'a mod_term * 'a mod_term -> 'a mod_term
@@ -83,7 +80,7 @@ and structure = {
   str_content : structure_item list ;
 }
 and structure_item =
-    Value_str of field * Core_types.term
+  | Value_str of field * Core_types.term
   (** let x = expr *)
   | Type_str of field * type_decl
   (** type t :: k = ty *)

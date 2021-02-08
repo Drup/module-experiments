@@ -314,8 +314,8 @@ module_expr:
           Functor (id, param, acc)
         ) me args
       }
-  | UIDENT            { Id $1 }
-  | module_expr DOT UIDENT { Proj{ path = $1 ; field = $3 } }
+  | UIDENT            { Path (PathId $1) }
+  | module_expr DOT UIDENT { Path (PathProj{ path = $1 ; field = $3 }) }
   | me = paren_module_expr
       { me }
   | me1 = module_expr me2 = paren_module_expr
@@ -657,14 +657,14 @@ fields(final):
   | prefix DOT final { PathProj {path = $1 ; field = $3} }
 ;
 longident_in_values:
-  | UIDENT            { Id $1 }
-  | longident_in_values DOT UIDENT { Proj{ path = $1 ; field = $3 } }
+  | UIDENT            { Path (PathId $1) }
+  | longident_in_values DOT UIDENT { Path (PathProj{ path = $1 ; field = $3 }) }
   | LPAREN m = longident_in_values LESSERCOLON ty = module_type RPAREN
       { Ascription (m, ty) }
 ;
 longident_in_types:
-  | UIDENT            { Id $1 }
-  | longident_in_types DOT UIDENT { Proj{ path = $1 ; field = $3 } }
+  | UIDENT            { Path (PathId $1) }
+  | longident_in_types DOT UIDENT { Path (PathProj{ path = $1 ; field = $3 }) }
   | LPAREN m = longident_in_types LESSERCOLON ty = module_type RPAREN
       { Ascription (m, ty) }
   | longident_in_types LPAREN longident_in_types RPAREN
@@ -673,12 +673,13 @@ longident_in_types:
       { expecting $loc($3) "module path" }
 ;
 longident_in_module_types:
-  | UIDENT            { Id $1 }
-  | longident_in_module_types DOT UIDENT { Proj{ path = $1 ; field = $3 } }
+  | UIDENT            { Path (PathId $1) }
+  | longident_in_module_types DOT UIDENT
+    { Path (PathProj{ path = $1 ; field = $3 }) }
   | longident_in_module_types LPAREN longident_in_types RPAREN
-      { Apply ($1, $3) }
+    { Apply ($1, $3) }
   | longident_in_module_types LPAREN error
-      { expecting $loc($3) "module path" }
+    { expecting $loc($3) "module path" }
 ;
 mod_longident:
     longident_in_values { $1 }

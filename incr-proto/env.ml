@@ -159,13 +159,7 @@ let lookup_in_sig ~key path field s =
 let rec lookup_module : t -> Modules.mod_path -> _
   = fun env path0 ->
     match path0 with
-    | Id id ->
-      let mty = lookup_in_env ~key:Module id env in
-      mty
-    | Proj {path; field} ->
-      let path_mty = lookup_module env path in
-      let s = !compute_signature env path_mty in
-      lookup_in_sig ~key:Module path field s
+    | Path p -> lookup Module env p
     | Ascription (path, ascr_mty) -> 
       let path_mty = lookup_module env path in
       let mty = !compute_ascription env path_mty ascr_mty in
@@ -175,25 +169,21 @@ let rec lookup_module : t -> Modules.mod_path -> _
       let mty = !compute_functor_app env ~f:mty_f ~arg:path_arg in
       mty
 
-let lookup : type a . a key -> t -> Modules.path -> a option
+and lookup : type a . a key -> t -> Modules.path -> a
   = fun key env p ->
-    try
-      match p with
-      | PathId id ->
-        let v = lookup_in_env ~key id env in
-        Some v
-      | PathProj { path ; field } ->
-        let path_mty = lookup_module env path in
-        let s = !compute_signature env path_mty in
-        let v = lookup_in_sig ~key path field s in
-        Some v
-    with
-    | Not_found -> None
+    match p with
+    | PathId id -> lookup_in_env ~key id env
+    | PathProj { path ; field } ->
+      let path_mty = lookup_module env path in
+      let s = !compute_signature env path_mty in
+      lookup_in_sig ~key path field s
 
-let lookup_module env p = try Some (lookup_module env p) with Not_found -> None
-let lookup_value = lookup Value
-let lookup_type = lookup Type
-let lookup_module_type = lookup Module_type
+let try_lookup f env x = try Some (f env x) with Not_found -> None
+
+let lookup_module = try_lookup lookup_module
+let lookup_value = try_lookup @@ lookup Value
+let lookup_type = try_lookup @@ lookup Type
+let lookup_module_type = try_lookup @@ lookup Module_type
 
 let find key env id =
   try 

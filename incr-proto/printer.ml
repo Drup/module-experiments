@@ -14,8 +14,7 @@ and ident fmt id = Fmt.string fmt (Ident.name id)
 
 and module_path : _ -> mod_path -> unit =
   fun fmt mdt -> match mdt with
-    | Id id -> ident fmt id
-    | Proj p -> proj fmt p
+    | Path p -> path fmt p
     | Ascription (md, mty) ->
       Fmt.pf fmt "@[<2>(%a@ <:@ %a)@]" module_path md module_type mty
     | Apply (md1, md2) ->
@@ -123,8 +122,7 @@ module Untyped = struct
 
   and module_term : _ -> mod_term -> unit =
     fun fmt mt -> match mt with
-      | Id id -> Fmt.string fmt id
-      | Proj p -> proj fmt p
+      | Path p -> path fmt p
       | Ascription (mt, mty) ->
         Fmt.pf fmt "@[<2>(%a@ <:@ %a)@]" module_term mt module_type mty
       | Apply (md1, md2) ->

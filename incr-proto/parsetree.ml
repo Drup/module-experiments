@@ -54,10 +54,8 @@ and proj = {
 }
 
 and mod_term =
-  | Id : string -> mod_term
-  (** X *)
-  | Proj : proj -> mod_term
-  (** P.X *)
+  | Path : path -> mod_term
+  (** X, P.X *)
   | Ascription : mod_term * mod_type -> mod_term
   (** (mod <: mty) *)
   | Apply : mod_term * mod_term -> mod_term

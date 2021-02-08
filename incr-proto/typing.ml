@@ -24,7 +24,7 @@ let rec type_module :
     | Some p ->
       Core (Alias p)
     | None -> begin match md with
-        | Id _ | Proj _ -> assert false
+        | Path _ -> assert false
         | Ascription (m, mty) ->
           let mty = transl_modtype env mty in
           let mty' = type_module env m in
@@ -88,17 +88,22 @@ and type_definition env = function
 
 and transl_mod_path_internal : Env.t -> mod_term -> M.mod_path =
   fun env m ->
-  let rec as_path env m : M.mod_path = match m with
-    | Id name ->
-      let id =
-        match Env.find_module env name with
-        | Some id -> id
-        | None -> error @@ Unbound_module name
-      in    
-      M.Id id
-    | Proj { path; field } ->
-      let path = as_path env path in
-      M.Proj { path ; field }
+  let rec as_path env (m : mod_term) : M.mod_path = match m with
+    | Path p ->
+      let p =
+        match p with
+        | PathId name -> 
+          let id =
+            match Env.find_module env name with
+            | Some id -> id
+            | None -> error @@ Unbound_module name
+          in
+          M.PathId id
+        | PathProj { path; field } ->
+          let path = as_path env path in
+          M.PathProj { path ; field }
+      in
+      M.Path p
     | Ascription (m, mty) ->
       let m = as_path env m in
       let mty = transl_modtype env mty in

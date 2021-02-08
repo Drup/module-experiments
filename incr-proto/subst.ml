@@ -13,8 +13,9 @@ let identity : t = {
 }
 
 let add_module p v sub =
-  if Id p = v then sub else
-    { modules = Ident.Map.add p v sub.modules }
+  match v with
+  | Path (PathId p') when Ident.equal p p' -> sub
+  | _ -> { modules = Ident.Map.add p v sub.modules }
 
 let val_type sub (decl : Core_types.val_type) = Core_subst.val_type sub decl
 
@@ -24,24 +25,24 @@ let rec type_decl sub (decl : Modules.type_decl) : Modules.type_decl =
         | Some dty -> Some (Core_subst.def_type sub dty)) ;
     manifest = match decl.manifest with
         None -> None
-      | Some p -> Some (path sub p)
+      | Some p -> Some (type_path sub p)
   }
 
 and proj sub {Modules. path ; field } =
   {path = mod_path sub path ; field }
-and path sub p = match p with
+and type_path sub p = match p with
   | PathId _id -> p
   | PathProj p -> PathProj (proj sub p)
 
 and mod_path sub (p : mod_path) =
   match p with
-  | Id id ->
+  | Path (PathId id) ->
     begin
       try Ident.Map.lookup id sub.modules with
-      | Not_found -> Id id
+      | Not_found -> Path (PathId id)
     end
-  | Proj {path; field} ->
-    Proj {path = mod_path sub path; field}
+  | Path (PathProj pr) ->
+    Path (PathProj (proj sub pr))
   | Apply (p1, p2) ->
     Apply (mod_path sub p1, mod_path sub p2)
   | Ascription (p, mty) ->
