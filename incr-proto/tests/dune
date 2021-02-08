@@ -4,7 +4,7 @@ let pp_stanza ppf filename =
   let base = Filename.remove_extension filename in
   Format.fprintf ppf {|
 (rule
- (with-stdout-to %s.output (run incrml -m expect %s.ml)))
+ (with-stdout-to %s.output (run incrml -m expect %%{dep:%s.ml})))
 (rule
  (alias runtest)
  (action (diff %s.ml %s.output)))|}
