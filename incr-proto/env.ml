@@ -86,8 +86,12 @@ let fold_with name f env0 l0 =
     | h :: t ->
       let env = update_sig env signature in
       let item = f env h in
-      let signature = add_item item signature in
-      aux_fold env signature t
+      match item with
+      | Some item -> 
+        let signature = add_item item signature in
+        aux_fold env signature t
+      | None ->
+        aux_fold env signature t
   in
   let sig0 = empty_sig id in
   aux_fold env0 sig0 l0
@@ -106,13 +110,13 @@ let intro_module_type = intro Module_type
 
 let intro_item item env = match item with
   | Modules.Value_sig (field, decl) ->
-    intro Value field decl env
+    intro Value (Some field) decl env
   | Type_sig (field, decl) ->
-    intro Type field decl env
+    intro Type (Some field) decl env
   | Module_sig (field, decl) ->
-    intro Module field decl env
+    intro Module (Some field) decl env
   | Module_type_sig (field, decl) ->
-    intro Module_type field decl env
+    intro Module_type (Some field) decl env
 
 let lookup_in_env
   : type a . key:a key -> _ -> _ -> a

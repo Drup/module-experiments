@@ -296,8 +296,7 @@ functor_arg:
 ;
 
 module_name:
-  | x = UIDENT
-      { x }
+  | x = opt_ident(UIDENT) { x }
 ;
 
 (* -------------------------------------------------------------------------- *)
@@ -340,8 +339,9 @@ paren_module_expr:
 ;
 
 structure:
-  LPAREN name = UIDENT RPAREN l = structure_item*
-  { { str_self = name ; str_content = l } }
+  name = option(LPAREN name = opt_ident(UIDENT) RPAREN {name})
+  l = structure_item*
+  { { str_self = CCOpt.flatten name ; str_content = l } }
 ;
 
 (* A structure item. *)
@@ -398,7 +398,7 @@ module_binding_body:
 (* A module type declaration. *)
 module_type_declaration:
   MODULE TYPE
-  id = ident
+  id = opt_ident(ident)
   EQUAL
   mtyp = module_type
   { id, mtyp }
@@ -480,8 +480,9 @@ module_type:
 (* A signature, which appears between SIG and END (among other places),
    is a list of signature elements. *)
 signature:
-  LPAREN name = UIDENT RPAREN l = flatten(signature_element*)
-    { { sig_self = name ; sig_content = l } }
+  name = option(LPAREN name = opt_ident(UIDENT) RPAREN {name})
+  l = flatten(signature_element*)
+    { { sig_self = CCOpt.flatten name ; sig_content = l } }
 ;
 
 (* A signature element is one of the following:
@@ -556,12 +557,12 @@ let_binding:
     { body }
 ;
 %inline let_ident:
-    val_ident { $1 }
+    opt_ident(val_ident) { $1 }
 ;
 
 value_description:
   VAL
-  id = val_ident
+  id = opt_ident(val_ident)
   COLON
   ty = core_type
     { id, ty }
@@ -571,7 +572,7 @@ value_description:
 
 %inline type_declaration:
   TYPE
-  id = LIDENT
+  id = opt_ident(LIDENT)
   kind = type_kind
     { let manifest, definition = kind in
       id, { manifest ; definition }
@@ -646,6 +647,10 @@ ident:
 val_ident:
     LIDENT                    { $1 }
 ;
+%inline opt_ident(id):
+  | UNDERSCORE { None }
+  | i = id { Some i }
+;
 
 fields(final):
   | s = final { [s] }
@@ -693,3 +698,4 @@ mty_longident:
 type_longident:
     mk_longident(longident_in_types,LIDENT) { $1 }
 ;
+

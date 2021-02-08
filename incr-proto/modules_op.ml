@@ -263,7 +263,7 @@ and check_subtype_type_decl env tydecl1 tydecl2 =
 and subtype_module_decl env _path field = function
   | `Right _ -> raise Ascription_fail
   | `Left mty1 ->
-    let empty_sig = Core (Signature (empty_sig (Ident.create field))) in
+    let empty_sig = Core (Signature (empty_sig (Ident.create @@ Some field))) in
     let mty = Core (subtype_modtype env mty1 empty_sig) in
     Some mty
   | `Both (mty1, mty2) ->

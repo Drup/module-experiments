@@ -3,6 +3,8 @@ open Modules
 let fields f m fmt =
   FieldMap.iter (fun k d -> Fmt.sp fmt () ; f fmt k d) m
 
+let bound_name = Fmt.(option ~none:(unit "_") string)
+
 let rec path fmt = function
   | PathId id -> ident fmt id
   | PathProj p -> proj fmt p
@@ -10,7 +12,7 @@ let rec path fmt = function
 and proj fmt { path ; field } =
   Fmt.pf fmt "@[<h>%a.%s@]" module_path path field
 
-and ident fmt id = Fmt.string fmt (Ident.name id)
+and ident fmt id = Fmt.(option ~none:(unit "_") string) fmt (Ident.name id)
 
 and module_path : _ -> mod_path -> unit =
   fun fmt mdt -> match mdt with
@@ -49,12 +51,16 @@ and enrichment fmt = function
       (Fmt.list ~sep:(Fmt.unit ".") Fmt.string) fields
       Core_printer.def_type ty
 
+and module_self fmt id = match Ident.name id with
+  | None -> ()
+  | Some _ -> Fmt.pf fmt " (%a)" ident id
+
 and mod_type_core fmt = function
   | TPath p -> path fmt p
   | Alias p -> Fmt.pf fmt "@[(= %a)@]" module_path p
   | Signature s ->
-    Fmt.pf fmt "@[<hv 2>sig (%a)%a@;<1 -2>end@]"
-      ident s.sig_self
+    Fmt.pf fmt "@[<hv 2>sig%a%a@;<1 -2>end@]"
+      module_self s.sig_self
       signature_content s
   | Functor_type (id, param, body) ->
     Fmt.pf fmt "@[<hv2>@[(%a@ :@ %a)@ ->@]@ %a@]"
@@ -83,9 +89,9 @@ and module_declaration fmt name mty = match mty with
       name
       module_path p
   | Core (Signature s) -> 
-    Fmt.pf fmt "@[<hv 2>module %s : sig (%a)%a@;<1 -2>end@]"
+    Fmt.pf fmt "@[<hv 2>module %s : sig%a%a@;<1 -2>end@]"
       name
-      ident s.sig_self
+      module_self s.sig_self
       signature_content s
   | _ -> 
     Fmt.pf fmt "@[<2>module %s :@ %a@]"
@@ -120,6 +126,10 @@ module Untyped = struct
   and proj fmt { path ; field } =
     Fmt.pf fmt "@[<h>%a.%s@]" module_term path field
 
+  and module_self fmt = function
+    | None -> ()
+    | Some x -> Fmt.pf fmt " (%s)" x
+  
   and module_term : _ -> mod_term -> unit =
     fun fmt mt -> match mt with
       | Path p -> path fmt p
@@ -128,12 +138,12 @@ module Untyped = struct
       | Apply (md1, md2) ->
         Fmt.pf fmt "@[<2>%a@ %a@]" module_term md1 module_term md2
       | Structure { str_self; str_content } -> 
-        Fmt.pf fmt "@[<v>@[<v 2>sig (%s)@ %a@]@ end@]"
-          str_self
+        Fmt.pf fmt "@[<v>@[<v 2>sig%a@ %a@]@ end@]"
+          module_self str_self
           (Fmt.list ~sep:Fmt.cut structure_item) str_content
       | Functor (id, param, body) ->
-        Fmt.pf fmt "@[<hv2>@[(%s@ :@ %a)@ ->@]@ %a@]"
-          id
+        Fmt.pf fmt "@[<hv2>@[(%a@ :@ %a)@ ->@]@ %a@]"
+          bound_name id
           module_type param
           module_term body
       | Constraint (mt, mty) ->
@@ -159,12 +169,12 @@ module Untyped = struct
     | TPath p -> path fmt p
     | Alias p -> Fmt.pf fmt "@[(= %a)@]" module_term p
     | Signature { sig_self; sig_content } ->
-      Fmt.pf fmt "@[<v>@[<v 2>sig (%s)@ %a@]@ end@]"
-        sig_self
+      Fmt.pf fmt "@[<v>@[<v 2>sig%a@ %a@]@ end@]"
+        module_self sig_self
         (Fmt.list ~sep:Fmt.cut signature_item) sig_content
     | Functor_type (id, param, body) ->
-      Fmt.pf fmt "@[<hv2>@[(%s@ :@ %a)@ ->@]@ %a@]"
-        id
+      Fmt.pf fmt "@[<hv2>@[(%a@ :@ %a)@ ->@]@ %a@]"
+        bound_name id
         module_type param
         module_type body
     | Ascription_sig (mty1, mty2) ->
@@ -173,21 +183,21 @@ module Untyped = struct
         module_type mty2
   
   and signature_item fmt = function
-    | Value_sig (field, ty) ->
-      Fmt.pf fmt "@[<2>val %s =@ %a@]"
-        field
+    | Value_sig (name, ty) ->
+      Fmt.pf fmt "@[<2>val %a =@ %a@]"
+        bound_name name
         Core_printer.val_type ty
-    | Type_sig (field, tydecl) ->
-      Fmt.pf fmt "@[<2>type %s %a@]"
-        field
+    | Type_sig (name, tydecl) ->
+      Fmt.pf fmt "@[<2>type %a %a@]"
+        bound_name name
         type_decl tydecl
-    | Module_sig (field, mty) ->
-      Fmt.pf fmt "@[<2>module %s :@ %a@]"
-        field
+    | Module_sig (name, mty) ->
+      Fmt.pf fmt "@[<2>module %a :@ %a@]"
+        bound_name name
         module_type mty
-    | Module_type_sig (field, mty) ->
-      Fmt.pf fmt "@[<2>module %s =@ %a@]"
-        field
+    | Module_type_sig (name, mty) ->
+      Fmt.pf fmt "@[<2>module %a =@ %a@]"
+        bound_name name
         module_type mty
 
   and type_decl fmt { manifest ; definition } =
@@ -203,21 +213,21 @@ module Untyped = struct
         Core_printer.def_type def
 
   and structure_item fmt = function
-    | Value_str (field, t) ->
-      Fmt.pf fmt "@[<2>let %s =@ %a@]"
-        field
+    | Value_str (name, t) ->
+      Fmt.pf fmt "@[<2>let %a =@ %a@]"
+        bound_name name
         Core_printer.term t
-    | Type_str (field, tydecl) ->
-      Fmt.pf fmt "@[<2>type %s %a@]"
-        field
+    | Type_str (name, tydecl) ->
+      Fmt.pf fmt "@[<2>type %a %a@]"
+        bound_name name
         type_decl tydecl
-    | Module_str (field, mty) ->
-      Fmt.pf fmt "@[<2>module %s :@ %a@]"
-        field
+    | Module_str (name, mty) ->
+      Fmt.pf fmt "@[<2>module %a :@ %a@]"
+        bound_name name
         module_term mty
-    | Module_type_str (field, mty) ->
-      Fmt.pf fmt "@[<2>module %s =@ %a@]"
-        field
+    | Module_type_str (name, mty) ->
+      Fmt.pf fmt "@[<2>module %a =@ %a@]"
+        bound_name name
         module_type mty
 
 end

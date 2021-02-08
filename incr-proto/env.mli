@@ -8,16 +8,16 @@ val add_type: Ident.t -> Modules.type_decl -> t -> t
 val add_module: Ident.t -> Modules.mod_type -> t -> t
 val add_module_type: Ident.t -> Modules.mod_type -> t -> t
 
-val intro_value: Parsetree.name -> Core_types.val_type -> t -> Ident.t * t
-val intro_type: Parsetree.name -> Modules.type_decl -> t -> Ident.t * t
-val intro_module: Parsetree.name -> Modules.mod_type -> t -> Ident.t * t
-val intro_module_type: Parsetree.name -> Modules.mod_type -> t -> Ident.t * t
+val intro_value: Parsetree.bound_name -> Core_types.val_type -> t -> Ident.t * t
+val intro_type: Parsetree.bound_name -> Modules.type_decl -> t -> Ident.t * t
+val intro_module: Parsetree.bound_name -> Modules.mod_type -> t -> Ident.t * t
+val intro_module_type: Parsetree.bound_name -> Modules.mod_type -> t -> Ident.t * t
 
 val intro_item : Modules.signature_item -> t -> Ident.t * t
 
 val fold_with: 
-  Parsetree.name ->
-  (t -> 'a -> Modules.signature_item) ->
+  Parsetree.bound_name ->
+  (t -> 'a -> Modules.signature_item option) ->
   t -> 'a list ->
   Modules.signature
 

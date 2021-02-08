@@ -38,7 +38,7 @@ include Peahell.Make(struct
     let exec fmt _import env l =
       let f env i =
         let i, env = Typing.type_item env i in
-        Peahell.Report.fprintf fmt "%a@?" Printer.signature_item i;
+        Peahell.Report.fprintf fmt "%a@?" (Fmt.option Printer.signature_item) i;
         env
       in
       List.fold_left f env l

@@ -1,6 +1,6 @@
 
 module M = struct
-  type t = {name: string; stamp: int}
+  type t = {name: string option; stamp: int}
   let compare id1 id2 = compare id1.stamp id2.stamp
 end
 
@@ -60,7 +60,7 @@ module Map = struct
       Empty ->
       Node(Empty, {ident = id; data = data; previous = None}, Empty, 1)
     | Node(l, k, r, h) ->
-      let c = String.compare (name id) (name k.ident) in
+      let c = CCOrd.compare (name id) (name k.ident) in
       if c = 0 then
         Node(l, {ident = id; data = data; previous = Some k}, r, h)
       else if c < 0 then
@@ -90,7 +90,7 @@ module Map = struct
       Empty ->
       Empty
     | (Node (l, k, r, h) as m) ->
-      let c = String.compare (name id) (name k.ident) in
+      let c = CCOrd.compare (name id) (name k.ident) in
       if c = 0 then
         match k.previous with
         | None -> merge l r
@@ -110,7 +110,7 @@ module Map = struct
       Empty ->
       raise Not_found
     | Node(l, k, r, _) ->
-      let c = String.compare (name id) (name k.ident) in
+      let c = CCOrd.compare (name id) (name k.ident) in
       if c = 0 then
         if equal id k.ident
         then k.data
@@ -128,7 +128,7 @@ module Map = struct
       Empty ->
       raise Not_found
     | Node(l, k, r, _) ->
-      let c = String.compare n (name k.ident) in
+      let c = CCOrd.compare (Some n) (name k.ident) in
       if c = 0 then
         k.ident, k.data
       else
@@ -142,7 +142,7 @@ module Map = struct
       Empty ->
       []
     | Node(l, k, r, _) ->
-      let c = String.compare n (name k.ident) in
+      let c = CCOrd.compare (Some n) (name k.ident) in
       if c = 0 then
         (k.ident, k.data) :: get_all k.previous
       else

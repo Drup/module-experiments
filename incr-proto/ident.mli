@@ -1,6 +1,6 @@
 type t
-val create: string -> t
-val name: t -> string
+val create: string option -> t
+val name: t -> string option
 val equal: t -> t -> bool
 val compare: t -> t -> int
 

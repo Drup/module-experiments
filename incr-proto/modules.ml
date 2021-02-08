@@ -2,6 +2,7 @@ type pure = Pure
 type impure = Impure
 
 type field = string
+type bound_name = string option
 module FieldMap = CCMap.Make(String)
 
 type type_decl = {
@@ -80,11 +81,11 @@ and structure = {
   str_content : structure_item list ;
 }
 and structure_item =
-  | Value_str of field * Core_types.term
+  | Value_str of bound_name * Core_types.term
   (** let x = expr *)
-  | Type_str of field * type_decl
+  | Type_str of bound_name * type_decl
   (** type t :: k = ty *)
-  | Module_str of field * impure mod_term
+  | Module_str of bound_name * impure mod_term
   (** module X = mod *)
-  | Module_type_str of field * mod_type
+  | Module_type_str of bound_name * mod_type
   (** module type X = mty *)

@@ -59,16 +59,18 @@ and type_functor_app env fun_mty arg_mty =
 and type_structure env { str_self; str_content } =
   Env.fold_with str_self type_definition env str_content
 
-and type_definition env = function
+and type_definition env def =
+  let add id f : M.signature_item option = Option.map f id in
+  match def with
   | Value_str(id, term) ->
     let ty = Core.Typing.term env term in
-    Value_sig(id, ty)
+    add id @@ fun id -> Value_sig(id, ty)
   | Module_str(id, modl) ->
     let mty = type_module env modl in
-    Module_sig(id, mty)
+    add id @@ fun id -> Module_sig(id, mty)
   | Module_type_str(id, mty) ->
     let mty = transl_modtype env mty in
-    Module_type_sig(id, mty)
+    add id @@ fun id -> Module_type_sig(id, mty)
   | Type_str(id, { manifest; definition }) ->
     let manifest =
       let f ty =
@@ -84,7 +86,7 @@ and type_definition env = function
       | None -> ()
       | Some ty -> Core.Typing.def_type env ty
     end ;
-    Type_sig(id, { manifest; definition })
+    add id @@ fun id -> Type_sig(id, { manifest; definition })
 
 and transl_mod_path_internal : Env.t -> mod_term -> M.mod_path =
   fun env m ->
@@ -181,7 +183,7 @@ and transl_modtype env = function
     M.Core (Functor_type(param, param_ty, res))
   | Let (name, mty1, mty2) ->
     let mty1 = transl_modtype env mty1 in
-    let id, env = Env.intro_module name mty1 env in
+    let id, env = Env.intro_module (Some name) mty1 env in
     let mty2 = transl_modtype env mty2 in
     M.Let (id, mty1, mty2)
   | Enrich (mty, enrich) ->
@@ -205,15 +207,17 @@ and transl_signature env { sig_self; sig_content } =
   in
   Signature sig_final
 
-and transl_signature_item env = function
+and transl_signature_item env def = 
+  let add id f : M.signature_item option = Option.map f id in
+  match def with
   | Value_sig(id, ty) ->
-    Value_sig(id, ty)
+    add id @@ fun id -> Value_sig(id, ty)
   | Module_sig(id, mty) ->
     let mty = transl_modtype env mty in
-    Module_sig(id, mty)
+    add id @@ fun id -> Module_sig(id, mty)
   | Module_type_sig(id, mty) ->
     let mty = transl_modtype env mty in
-    Module_sig(id, mty)
+    add id @@ fun id -> Module_sig(id, mty)
   | Type_sig(id, { manifest; definition }) ->
     let manifest =
       let f ty =
@@ -229,7 +233,7 @@ and transl_signature_item env = function
       | None -> ()
       | Some ty -> Core.Typing.def_type env ty
     end ;
-    Type_sig(id, { manifest; definition })
+    add id @@ fun id -> Type_sig(id, { manifest; definition })
 
 (** Env mutual recursion *)
 
@@ -253,10 +257,13 @@ let () =
 
 
 let type_item env item =
-  let i = type_definition env item in
-  let _, env = Env.intro_item i env in
-  i, env
-
+  let item = type_definition env item in
+  match item with
+  | Some i -> 
+    let _, env = Env.intro_item i env in
+    item, env
+  | None ->
+    item, env
 
 (** Errors *)
   
