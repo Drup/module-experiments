@@ -2,21 +2,21 @@
 \begin{subfigure}[t]{0.45\linewidth}
 \begin{align*}
   \htag{Path}
-  \ip ::=&\ \ix_i \mid \ip.\ix\\
-  \iP ::=&\ \ix_i \mid \iP.\ix \mid \Sapp{\iP_1}{\iP_2} \mid \Stransp{\iP}{\iM}
+  \ip ::=&\ \ix \mid \ip.\ix\\
+  \iP ::=&\ \ix \mid \iP.\ix \mid \Sapp{\iP_1}{\iP_2} \mid \Stransp{\iP}{\iM}
   \htag{Module Expressions}
   \im ::=&\ \ip\tag{Variables}\\
   |&\ \Sconstraint{\im}{\iM}\tag{Opaque Ascription}\\
   |&\ \Stransp{\im}{\iM}\tag{Transparent Ascription}\\
   |&\ \Sapp{\im_1}{\im_2}\tag{Functor application}\\
-  |&\ \Sfunctor{\ix_i}{\iM}{\im}\tag{Functor}\\
-  |&\ \Sstruct{\is}\tag{Structure}\\
+  |&\ \Sfunctor{\ix}{\iM}{\im}\tag{Functor}\\
+  |&\ \Sstruct{\ix}{\is}\tag{Structure}\\
   \htag{Structures}
   \is ::=&\ \Sempty\ |\ \id;\is\\
-  \id ::=&\ \Slet{x_i}{e}\tag{Values}\\
+  \id ::=&\ \Slet{x}{e}\tag{Values}\\
   |&\ \Stype{t}{\tau}\tag{Types}\\
-  |&\ \Smodule{\ix_i}{\im}\tag{Modules}\\
-  |&\ \Smoduletype{\iX_i}{\iM}\tag{Module types}\\
+  |&\ \Smodule{\ix}{\im}\tag{Modules}\\
+  |&\ \Smoduletype{\iX}{\iM}\tag{Module types}\\
   \htag{Core language}
   e ::=&\ \ip.x \tag{Qualified variable}\\
   |&\ \dots \tag{Other expressions}\\
@@ -27,24 +27,24 @@
 \begin{subfigure}[t]{0.5\linewidth}
 \begin{align*}
   \htag{Module types}
-  \iMO ::=&\ \iX_i\ |\ \iP.\iX\tag{Variables}\\
+  \iMO ::=&\ \iX\ |\ \iP.\iX\tag{Variables}\\
   |&\ \Salias{\iP}\tag{Alias}\\
-  |&\ \Sfunctor{X_i}{\iM_1}{\iM_2}\tag{Functor}\\
-  |&\ \Ssig{\iS}\tag{Signature}\\
+  |&\ \Sfunctor{\iX}{\iM_1}{\iM_2}\tag{Functor}\\
+  |&\ \Ssig{\ix}{\iS}\tag{Signature}\\
   \iM ::=&\ \Sstrengthen{l}{\iP}{\iM}\tag{Strengthening}\\
-  |&\ \Ssubst{\iX : \iM}{\iM}\tag{Let}\\
+  |&\ \Ssubst{\ix : \iM}{\iM}\tag{Let}\\
   |&\ \Senrich{\iC}{\iM}\tag{Enrichment}\\
   |&\ \iMO\\
-  \htag{Substitutions}
+  \htag{Enrichment}
   \iC ::=&\ \ip.t = \tau\\
   |&\ \ip : \iM\\
   \htag{Signatures}
   \iS ::=&\ \Sempty\ |\ \iD;\iS\\
-  \iD ::=&\ \Sval{x_i}{\tau}\tag{Values}\\
+  \iD ::=&\ \Sval{x}{\tau}\tag{Values}\\
   |&\ \Stype{t}{\tau}\tag{Types}\\
   |&\ \Stypeabs{t}\tag{Abstract types}\\
-  |&\ \Smodulety{\ix_i}{\iM}\tag{Modules}\\
-  |&\ \Smoduletype{\iX_i}{\iM}\tag{Module types}\\
+  |&\ \Smodulety{\ix}{\iM}\tag{Modules}\\
+  |&\ \Smoduletype{\iX}{\iM}\tag{Module types}\\
   \htag{Environments}
     \E ::=&\ \iS
 \end{align*}

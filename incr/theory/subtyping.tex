@@ -1,5 +1,9 @@
 \begin{mathpar}
   \inferrule
+  { \Onormalize{\E}{\iP} = \Onormalize{\E}{\iP'} }
+  { \eqpath{\E}{\iP}{\iP'} }
+  \and
+  \inferrule
   { \submod{\E}{\Oforce{\E}{\iM}}{\Oforce{\E}{\iM'}}{\iM''} }
   { \submod{\E}{\iM}{\iM'}{\iM''} }
   \and
@@ -28,7 +32,7 @@
   { \submod{\E}{\iMO}{\iP}{\iM} }
   \and
   \inferrule
-  { \Onormalize{\E}{\iP} = \Onormalize{\E}{\iP'} \\
+  { \eqpath{\E}{\iP}{\iP'} \\
     \submod{\E}{\resolve{\E}{\iP}}{\iM}{\iM''} \\
     \submod{\E}{\iM''}{\iM'}{\_}
   }
@@ -37,15 +41,7 @@
     {\Salias{\Stransp{\iP'}{\iM'}}} }
   \and
   \inferrule
-  { \Onormalize{\E}{\iP} = \Onormalize{\E}{\iP'} \\
-    \submod{\E}{\iM''}{\iM'}{\_}
-  }
-  { \submod{\E}
-    {\Salias{\iP}}{\Salias{\Stransp{\iP'}{\iM'}}}
-    {\Salias{\Stransp{\iP'}{\iM'}}} }
-  \and
-  \inferrule
-  { \subpath{\E}{\iP}{\iP'} \\
+  { \eqpath{\E}{\iP}{\iP'} \\
     \submod{\E}{\resolve{\E}{\iP}}{\iM}{\iM''} \\
     \submod{\E}{\iM''}{\resolve{\E}{\iP}}{\_}
   }
@@ -53,7 +49,15 @@
     {\Salias{\iP'}} }
   \and
   \inferrule
-  { \Onormalize{\E}{\iP} = \Onormalize{\E}{\iP'} }
+  { \eqpath{\E}{\iP}{\iP'} \\
+    \submod{\E}{\iM''}{\iM'}{\_}
+  }
+  { \submod{\E}
+    {\Salias{\iP}}{\Salias{\Stransp{\iP'}{\iM'}}}
+    {\Salias{\Stransp{\iP'}{\iM'}}} }
+  \and
+  \inferrule
+  { \eqpath{\E}{\iP}{\iP'} }
   { \submod{\E}{\Salias{\iP}}{\Salias{\iP'}}{\Salias{\iP'}} }
   \and
   \inferrule
@@ -73,55 +77,104 @@
     {\Sfunctor{X}{\iM'_a}{\iM''_r}} }
   \and
   %
-  \inferrule[\TODO{figure out permutation}]
-  { \pi:\rg{1}{m} \to \rg{1}{n} \\
-    \forall i\in[1;m],\ \submod{\E;\iD_1;\dots;\iD_n}{\iD_{\pi(i)}}{\iD'_i}{\iD''_i}
+  \inferrule
+  { {\cal B} = \iS \times \subst{\ix'}{\ix}{\iS'}\\
+    \forall \iD_x,\iD'_x\in{\cal B},\quad
+    \submod{\E;(\Smodule{\ix}{\Ssig{\ix}{\iS}})}
+    {\iD_x}
+    {\iD'_x}
+    {\iD''_x}
   }
-  { \submod{\E}{\Ssig{\iD_1;\dots;\iD_n}}{\Ssig{\iD'_1;\dots;\iD'_m}}{\Ssig{\iD''_1;\dots;\iD''_m}} }
-  \and
-  %
+  { \submod{\E}
+    {\Ssig{\ix}{\iS}}
+    {\Ssig{\ix'}{\iS'}}
+    {\Ssig{\ix}{\overline{\iD''_x}}}
+  }
+\end{mathpar}
+\hrule
+\begin{mathpar}
   \inferrule
   { \submod{\E}{\iM_1}{\iM_2}{\iM}  }
   { \submod{\E}
-    {(\Smodulety{X_i}{\iM_1})}{(\Smodulety{X_i}{\iM_2})}
-    {(\Smodulety{X_i}{\iM})} }
+    {(\Smodulety{\ix}{\iM_1})}{(\Smodulety{\ix}{\iM_2})}
+    {(\Smodulety{\ix}{\iM})} }
+  \and
+  \inferrule
+  { \submod{\E}{\iM_1}{(\Ssig{}{})}{\iM}  }
+  { \submod{\E}
+    {(\Smodulety{\ix}{\iM_1})}{\emptyset}
+    {(\Smodulety{\ix}{\iM})} }
+  \and
+  \inferrule
+  { \submod{\E}{\iM_1}{\iM_2}{\iM}  }
+  { \submod{\E}
+    {(\Smoduletype{\iX}{\iM_1})}{(\Smoduletype{\iX}{\iM_2})}
+    {(\Smoduletype{\iX}{\iM})} }
   \and
   \inferrule
   { }
   { \submod{\E}
-    {(\Stypeabs{t_i})}
-    {(\Stypeabs{t_i})}
-    {(\Stypeabs{t_i})}
-  }
+    {(\Smoduletype{\iX}{\iM})}{\emptyset}
+    {(\Smoduletype{\iX}{\iM})} }
   \and
-  \inferrule[\TODO{Double check which side to keep}]
+  \inferrule
   { \subtyp{\E}{\tau_1}{\tau_2}{} }
   { \submod{\E}
-    {(\Sval{x_i}{\tau_1})}{(\Sval{x_i}{\tau_2})}
-    {(\Sval{x_i}{\tau_2})} }
+    {(\Sval{x}{\tau_1})}{(\Sval{x}{\tau_2})}
+    {(\Sval{x}{\tau_2})} }
   \and
-  \inferrule[\TODO{Double check which side to keep}]
+  \inferrule
+  { }
+  { \submod{\E}
+    {(\Sval{x}{\tau_1})}{\emptyset}
+    {\emptyset} }
+  \and
+  \inferrule
+  { }
+  { \submod{\E}
+    {(\Stypeabs{t})}
+    {(\Stypeabs{t})}
+    {(\Stypeabs{t})}
+  }
+  \and
+  \inferrule
   { \subtyp{\E}{\tau_1}{\tau_2} }
   { \submod{\E}
-    {(\Stype{t_i}{\tau_1})}
-    {(\Stype{t_i}{\tau_2})}
-    {(\Stype{t_i}{\tau_1})}
+    {(\Stype{t}{\tau_1})}
+    {(\Stype{t}{\tau_2})}
+    {(\Stype{t}{\tau_1})}
   }
   \and
   \inferrule
   { \subtyp{\E}{t}{\tau} }
   { \submod{\E}
-    {(\Stypeabs{t_i})}
-    {(\Stype{t_i}{\tau})}
-    {(\Stype{t_i}{\tau})}
+    {(\Stypeabs{t})}
+    {(\Stype{t}{\tau})}
+    {(\Stype{t}{\tau})}
   }
   \and
   \inferrule
   { }
   { \submod{\E}
-    {(\Stype{t_i}{\tau})}
-    {(\Stypeabs{t_i})}
-    {(\Stype{t_i}{\tau})}
+    {(\Stype{t}{\tau})}
+    {(\Stypeabs{t})}
+    {(\Stype{t}{\tau})}
+  }
+  \and
+  \inferrule
+  { }
+  { \submod{\E}
+    {(\Stype{t}{\tau})}
+    {\emptyset}
+    {(\Stype{t}{\tau})}
+  }
+  \and
+  \inferrule
+  { }
+  { \submod{\E}
+    {(\Stypeabs{t})}
+    {\emptyset}
+    {(\Stypeabs{t})}
   }
 \end{mathpar}
 

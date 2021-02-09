@@ -1,11 +1,11 @@
 \begin{mathpar}
   % \inferrule[ModVar]
-  % { \Smodulety{\ix_i}{\iM} \in \E }
-  % { \wtm{\E}{\ix_i}{\Salias{\ix_i}} }
+  % { \Smodulety{\ix}{\iM} \in \E }
+  % { \wtm{\E}{\ix}{\Salias{\ix}} }
   % \and
   \inferrule[ModVar]
-  { \lookup{\E}{\ip} = \_ }
-  % { \wtm{\E}{\ip.\ix}{\substs{n_i}{\ip.n}{\bv{\iS_1}}{\iM}} }
+  { \ip \in \E }
+  % { \wtm{\E}{\ip.\ix}{\substs{n}{\ip.n}{\bv{\iS_1}}{\iM}} }
   { \wtm{\E}{\ip}{\Salias{\ip}} }
   \and
   % \inferrule[Strength]
@@ -21,7 +21,7 @@
   { \wtm{\E}{\Sconstraint{\im}{\iM}}{\iM} }
   \and
   \inferrule
-  { \wtm{\E}{\im}{\iM_i} \\ \submod{\E}{\iM_i}{\iM}{\iM_r} }
+  { \wtm{\E}{\im}{\iM} \\ \submod{\E}{\iM}{\iM}{\iM_r} }
   { \wtm{\E}{\Stransp{\im}{\iM}}{\iM_r} }
   %
   \and
@@ -34,7 +34,7 @@
     {\Ssubst{\ix : \iM_c}{\iM_r}} }
   \and
   % \inferrule
-  % { \wtm{\E}{\im_f}{\Sfunctor{\ix_i}{\iM}{\iM_r}} \\
+  % { \wtm{\E}{\im_f}{\Sfunctor{\ix}{\iM}{\iM_r}} \\
   %   \wtm{\E}{\im_a}{\iM_a} \\
   %   \submod{\E}{\iM_a}{\iM}
   % }
@@ -42,48 +42,48 @@
   % \and
   \inferrule
   { \wfm{\E}{\iM} \\
-    X_i \notin \bv{\E} \\
-    \wtm{\E;\Smodulety{X_i}{\iM}}{\im}{\iM'}
+    X \notin \bv{\E} \\
+    \wtm{\E;\Smodulety{X}{\iM}}{\im}{\iM'}
   }
-  { \wtm{\E}{\Sfunctor{X_i}{\iM}{\im}}{\Sfunctor{X_i}{\iM}{\iM'}} }
+  { \wtm{\E}{\Sfunctor{X}{\iM}{\im}}{\Sfunctor{X}{\iM}{\iM'}} }
   \and
   \inferrule
-  { \wtm{\E}{\is}{\iS} }
-  { \wtm{\E}{\Sstruct{\is}}{\Ssig{\iS}} }
+  { \wtm[\iy]{\E}{\is}{\iS} }
+  { \wtm{\E}{\Sstruct{\ix}{\is}}{\Ssig{\ix}{\iS}} }
   \and
   \inferrule
   { }
-  { \wtm{\E}{\Sempty}{\Sempty} }
+  { \wtm[\iy]{\E}{\Sempty}{\Sempty} }
   %
   \\
   \inferrule
   { \wt{\E}{e}{\tau} \\
-    x_i \notin \bv{\E} \\
-    \wtm{\E;\Sval{x_i}{\tau}}{\is}{\iS}
+    x \notin \lookup{\E}{\iy} \\
+    \wtm[\iy]{\E;\Sval{\iy.x}{\tau}}{\is}{\iS}
   }
-  { \wtm{\E}{(\Slet{x_i}{e}; \is)}{(\Sval{x_i}{\tau}; \iS)} }
+  { \wtm[\iy]{\E}{(\Slet{x}{e}; \is)}{(\Sval{x}{\tau}; \iS)} }
   \and
   \inferrule
   { \wtm{\E}{\im}{\iM} \\
     % \submod{\E}{\Sstrengthen{}{\im}{\iM'}}{\iM} \\
-    \ix_i \notin \bv{\E} \\
-    \wtm{\E;\Smodulety{\ix_i}{\iM}}{\is}{\iS}
+    \ix \notin \lookup{\E}{\iy} \\
+    \wtm[\iy]{\E;\Smodulety{\iy.\ix}{\iM}}{\is}{\iS}
   }
-  { \wtm{\E}{(\Smodule{\ix_i}{\im}; \is)}{(\Smodulety{\ix_i}{\iM}; \iS)} }
+  { \wtm[\iy]{\E}{(\Smodule{\ix}{\im}; \is)}{(\Smodulety{\ix}{\iM}; \iS)} }
   \and
   \inferrule
   { \wf{\E}{\tau} \\
-    t_i \notin \bv{\E} \\
-    \wtm{\E;\Stype{t_i}{\tau}}{\is}{\iS}
+    t \notin \lookup{\E}{\iy} \\
+    \wtm[\iy]{\E;\Stype{\iy.t}{\tau}}{\is}{\iS}
   }
-  { \wtm{\E}{(\Stype{t}{\tau}; \is)}{(\Stype{t}{\tau}; \iS)} }
+  { \wtm[\iy]{\E}{(\Stype{t}{\tau}; \is)}{(\Stype{t}{\tau}; \iS)} }
   \and
   \inferrule
   { \wfm{\E}{\iM} \\
-    \iX_i \notin \bv{\E} \\
-    \wtm{\E;\Smoduletype{\iX_i}{\iM}}{\is}{\iS}
+    \iX \notin \lookup{\E}{\iy} \\
+    \wtm[\iy]{\E;\Smoduletype{\iy.\iX}{\iM}}{\is}{\iS}
   }
-  { \wtm{\E}{(\Smoduletype{\iX_i}{\iM}; \is)}{(\Smoduletype{\iX_i}{\iM}; \iS)} }
+  { \wtm[\iy]{\E}{(\Smoduletype{\iX}{\iM}; \is)}{(\Smoduletype{\iX}{\iM}; \iS)} }
   % \and
   % \inferrule
   % { \wtm[\sideX]{\E}{(\struct{\is})}{(\signature{\valm[

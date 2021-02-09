@@ -10,6 +10,7 @@
 \newcommand\id{D}
 \newcommand\ip{P}
 \newcommand\ix{X}
+\newcommand\iy{Y}
 
 %% Types
 \newcommand\iM{\mathcal M}
@@ -28,8 +29,8 @@
 \newcommand\Salias[1]{(= #1)}
 \newcommand\Swith[2]{#1\ \mathtt{with}\ #2}
 
-\newcommand\Sstruct[1]{\mathtt{struct}\ #1\ \mathtt{end}}
-\newcommand\Ssig[1]{\mathtt{sig}\ #1\ \mathtt{end}}
+\newcommand\Sstruct[2]{\mathtt{struct}_{#1}\ #2\ \mathtt{end}}
+\newcommand\Ssig[2]{\mathtt{sig}_{#1}\ #2\ \mathtt{end}}
 \newcommand\Sempty\varepsilon
 
 \newcommand\Senrich[2]{{#2}_{\color{black}\left[#1\right]}}
@@ -49,12 +50,6 @@
 \newcommand\lookup[2]{#1(#2)}
 \newcommand\resolve[2]{\operatorname{resolve}_{#1}(#2)}
 
-% Operation
-\newcommand\Oenrich[2]{{#2}_{\color{red}\left[#1\right]}}
-\newcommand\Ostrengthen[3]{#3{\color{red}/#2}}
-\newcommand\Otransp[2]{(#1 \operatorname{{\color{red}<:}} #2)}
-\newcommand\Oforce[2]{\operatorname{force}_{#1}(#2)}
-\newcommand\Onormalize[2]{\operatorname{normalize}_{#1}(#2)}
 
 \newcommand\subst[3]{#3\!\left[#1 \mapsto #2\right]}
 \newcommand\substs[4]{#4\!\left[#1 \mapsto #2\ \middle|\ #1\in#3\right]}
@@ -62,11 +57,21 @@
 
 %% Jugements
 
-\newcommand\iswt{\operatorname{\triangleright}}
-\newcommand\iswtm{\operatorname{\blacktriangleright}}
+\newcommand\iswt{\operatorname{\vdash}}
+\newcommand\iswtm{\operatorname{\vdash}}
 \newcommand\wt[4][]{#2 \iswt_{#1} #3 \ddotop #4}
 \newcommand\wtp[3]{#1 \iswtm #2 \ddotop #3}
 \newcommand\wtm[4][]{#2 \iswtm_{#1} #3 \ddotop #4}
+
+% Operation
+\newcommand\opeq[3]{#1 \iswtm #2 = #3}
+\newcommand\Oenrich[4]{\opeq{#1}{\Senrich{#2}{#3}}{#4}}
+\newcommand\Ostrengthen[4]{\opeq{#1}{\Sstrengthen{#2}{#3}}{#4}}
+\newcommand\Osubst[4]{\opeq{#1}{\Ssubst{#2}{#3}}{#4}}
+
+\newcommand\Oforce[2]{\operatorname{force}_{#1}(#2)}
+\newcommand\Oshape[2]{\operatorname{shape}_{#1}(#2)}
+\newcommand\Onormalize[2]{\operatorname{normalize}_{#1}(#2)}
 
 % Welformedness of types and terms
 \newcommand\iswf{\operatorname{\vDash}}
@@ -76,9 +81,10 @@
 
 % Module inclusion
 \newcommand\issub{<:}
-\newcommand\subtyp[4][]{#2 \iswt_{#1} #3 \issub #4}
-\newcommand\submod[5][]{#2 \iswtm_{#1} #3 \issub #4 \leadsto #5}
+\newcommand\subtyp[3]{#1 \iswt #2 \issub #3}
+\newcommand\submod[4]{#1 \iswtm #2 \issub #3 \leadsto #4}
 \newcommand\subpath[4][]{#2 \iswtm_{#1} #3 \lesssim #4}
+\newcommand\eqpath[4][]{#2 \iswtm_{#1} #3 = #4}
 
 
 %%% Local Variables:

@@ -1,4 +1,3 @@
-
 \documentclass{article}
 
 % Encoding and lang
@@ -49,9 +48,15 @@
 
 \newcommand\TODO[1]{{\textbf{\color{red}{TODO: #1}}}}
 
+\title{A parsimonious module system}
+\author{TODO}
+\date{}
+
 \input{notations}
 
 \begin{document}
+
+\maketitle
 
 \begin{figure}[!hb]
   \input{theory/grammar}
@@ -62,28 +67,33 @@
 Judgements:\\
 \begin{tabular}{ll}
   $\wtm{\E}{\im}{\iM}$
-  &The module $\im$ is of type $\iM$ in $\E$.
+  & The module $\im$ is of type $\iM$ in $\E$.
   See \cref{module:typing}.\\
 
-  $\submod{\E}{\iM}{\iM'}{\iM_r}$&
-  The module type $\iM$ is a subtype of $\iM'$ in $\E$.
-  See \cref{module:subtyping}.\\
+  $\submod{\E}{\iM}{\iM'}{\iM_r}$
+  & The module type $\iM$ is a subtype of $\iM'$ in $\E$.
+    See \cref{module:subtyping}.\\
 
-  $\wfm{\E}{\iM}$ &
-  The module type $\iM$ is well-formed in $\E$.
-  See \cref{module:validity}.
+  $\opeq{\E}{\iM}{\iMO}$
+  & The module type with operations $\iM$ can be reduced to a module
+    type without operations $\iM0$.
+    See \cref{module:subtyping}.\\
+
+  % $\wfm{\E}{\iM}$ &
+  % The module type $\iM$ is well-formed in $\E$.
+  % See \cref{module:validity}.
 \end{tabular}\\
 
 Operations:\\
 \begin{tabular}{ll}
-  $\Ostrengthen{l}{\iP}{\iM}$
+  $\Sstrengthen{l}{\iP}{\iM}$
   & Strenghten $\iM$ by $\iP$ while ignoring the list of module paths $l$.\\
-  $\Oenrich{\iC}{\iM}$
-  & Applies the substitution $\iC$ in $\iM$.\\
-  $\Otransp{\iM}{\iM'}$
-  & Computes the transparent ascription of $\iM$ by $\iM'$.\\
-  $\Oforce{\E}{\iM}$
-  & Forces all the operations in $\iM$ until obtaining a simple module type $\iMO$.
+  $\Senrich{\iC}{\iM}$
+  & Enrich the module $\iM$ with the constraints $\iC$.\\
+  $\Ssubst{\iX : \iM}{\iM'}$
+  & Substitutes $\iX$ by $\iM$ in $\iM'$.
+  % $\Oforce{\E}{\iM}$
+  % & Forces all the operations in $\iM$ until obtaining a simple module type $\iMO$.
 \end{tabular}\\
 
 Environment accesses:\\
@@ -97,23 +107,23 @@ Environment accesses:\\
   & Normalizes the path $\iP$ in $\E$
 \end{tabular}
 
-\begin{figure}[hbt]
-  \input{theory/incrrules}
-\end{figure}
+% \begin{figure}[hbt]
+%   \input{theory/incrrules}
+% \end{figure}
 
 
 % \begin{figure}[hbt]
 %   \input{theory/transp}
 % \end{figure}
 
-\begin{figure}[!p]
+\begin{figure}[tbp]
   \mprset{sep=1.5em}
   \input{theory/typing}\vspace{-3mm}
   \caption{Module typing rules -- $\wtm{\E}{\im}{\iM}$}
   \label{module:typing}
-% % \end{figure}
+\end{figure}
 
-% \begin{figure}[hbt]
+\begin{figure}[tbp]
   \input{theory/subtyping}\vspace{-3mm}
   \caption{Module subtyping rules -- $\submod{\E}{\iM}{\iM'}{\iM_r}$}
   \label{module:subtyping}
@@ -126,17 +136,17 @@ Environment accesses:\\
 % \end{figure}
 
 % \begin{figure}[hbt]
-  \begin{subfigure}[t]{0.3\linewidth}
-    \begin{align*}
-      \Oforce{\E}{\Sstrengthen{l}{\iP}{\iM}}
-      &= \Oforce{\E}{\Ostrengthen{l}{\iP}{\iM}}\\
-      \Oforce{\E}{\Slet{\iC}{\iM}}
-      &= \Oforce{\E}{\Oenrich{\iC}{\iM}}\\
-      \Oforce{\E}{\Stransp{\iM}{\iM'}}
-      &= \Oforce{\E}{\Otransp{\iM}{\iM'}}\\
-      \Oforce{\E}{\iMO} &= \iMO
-    \end{align*}
-  \end{subfigure}
+  % \begin{subfigure}[t]{0.3\linewidth}
+  %   \begin{align*}
+  %     \Oforce{\E}{\Sstrengthen{l}{\iP}{\iM}}
+  %     &= \Oforce{\E}{\Ostrengthen{l}{\iP}{\iM}}\\
+  %     \Oforce{\E}{\Slet{\iC}{\iM}}
+  %     &= \Oforce{\E}{\Oenrich{\iC}{\iM}}\\
+  %     \Oforce{\E}{\Stransp{\iM}{\iM'}}
+  %     &= \Oforce{\E}{\Otransp{\iM}{\iM'}}\\
+  %     \Oforce{\E}{\iMO} &= \iMO
+  %   \end{align*}
+  % \end{subfigure}
   \begin{subfigure}[t]{0.33\linewidth}
     \begin{align*}
       \resolve{\E}{\iP}
