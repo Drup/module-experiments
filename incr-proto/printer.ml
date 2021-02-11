@@ -20,7 +20,7 @@ and module_path : _ -> mod_path -> unit =
     | Ascription (md, mty) ->
       Fmt.pf fmt "@[<2>(%a@ <:@ %a)@]" module_path md module_type mty
     | Apply (md1, md2) ->
-      Fmt.pf fmt "@[<2>%a@ %a@]" module_path md1 module_path md2
+      Fmt.pf fmt "@[<2>%a(%a)@]" module_path md1 module_path md2
 
 and module_type fmt = function
   | Strengthen (mty, p) ->
