@@ -12,16 +12,16 @@
   % { \wtm{\E}{\ip}{\iM} }
   % { \wtm{\E}{\ip}{\Sstrengthen{}{\ip}{\iM}} }
   % \and
-  \inferrule
-  { \wtm{\E}{\im}{\iM'} \\ \submod{\E}{\iM'}{\iM}{\_} }
-  { \wtm{\E}{\im}{\iM} }
-  \and
+  % \inferrule
+  % { \wtm{\E}{\im}{\iM'} \\ \submod{\E}{\iM'}{\iM}{\_} }
+  % { \wtm{\E}{\im}{\iM} }
+  % \and
   \inferrule
   { \wfm{\E}{\iM} \\ \wtm{\E}{\im}{\iM} }
   { \wtm{\E}{\Sconstraint{\im}{\iM}}{\iM} }
   \and
   \inferrule
-  { \wtm{\E}{\im}{\iM} \\ \submod{\E}{\iM}{\iM}{\iM_r} }
+  { \wtm{\E}{\im}{\iM'} \\ \submod{\E}{\iM'}{\iM}{\iM_r} }
   { \wtm{\E}{\Stransp{\im}{\iM}}{\iM_r} }
   %
   \and
@@ -42,13 +42,13 @@
   % \and
   \inferrule
   { \wfm{\E}{\iM} \\
-    X \notin \bv{\E} \\
+    X \notin \E \\
     \wtm{\E;\Smodulety{X}{\iM}}{\im}{\iM'}
   }
   { \wtm{\E}{\Sfunctor{X}{\iM}{\im}}{\Sfunctor{X}{\iM}{\iM'}} }
   \and
   \inferrule
-  { \wtm[\iy]{\E}{\is}{\iS} }
+  { \wtm[\ix]{\E}{\is}{\iS} }
   { \wtm{\E}{\Sstruct{\ix}{\is}}{\Ssig{\ix}{\iS}} }
   \and
   \inferrule
