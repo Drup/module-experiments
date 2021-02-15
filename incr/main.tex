@@ -78,7 +78,7 @@ Judgements:\\
 \item[$\Oreduce{\E}{\iM} = \iMO$ :]
   The module type with operations $\iM$ can be reduced to a module
   type without operations $\iMO$.
-  See \cref{module:strengthen,module:enrich}.
+  See \cref{module:strengthen,module:enrich,module:subst}.
   \TODO{Change bracket style ...}
 \end{description}
 
@@ -128,6 +128,12 @@ Environment accesses:\\
   \input{theory/enrich}
   \caption{Enrichment operation -- $\Senrich{\iC}{\iM}$}
   \label{module:enrich}
+\end{figure}
+
+\begin{figure}[tbp]
+  \input{theory/subst}
+  \caption{Subst operation -- $\Ssubst{\iC}{\iM}$}
+  \label{module:subst}
 \end{figure}
 
 \begin{figure}[tbp]
