@@ -22,6 +22,7 @@
 \usepackage{gensymb}
 % \usepackage{textgreek}
 \usepackage{multicol}
+\usepackage{ stmaryrd }
 
 \usepackage{fullpage}
 
@@ -46,6 +47,7 @@
 
 \usepackage[pdfusetitle,colorlinks=true,citecolor=Rhodamine]{hyperref}
 \usepackage[noabbrev,capitalize,nameinlink]{cleveref}
+\SetLabelAlign{parright}{\parbox[t]{\labelwidth}{\raggedleft#1}}
 
 \newcommand\TODO[1]{{\textbf{\color{red}{TODO: #1}}}}
 
@@ -66,24 +68,19 @@
 \end{figure}
 
 Judgements:\\
-\begin{tabular}{ll}
-  $\wtm{\E}{\im}{\iM}$
-  & The module $\im$ is of type $\iM$ in $\E$.
-  See \cref{module:typing}.\\
-
-  $\submod{\E}{\iM}{\iM'}{\iM_r}$
-  & The module type $\iM$ is a subtype of $\iM'$ in $\E$.
-    See \cref{module:subtyping}.\\
-
-  $\opeq{\E}{\iM}{\iMO}$
-  & The module type with operations $\iM$ can be reduced to a module
-    type without operations $\iM0$.
-    See \cref{module:subtyping}.\\
-
-  % $\wfm{\E}{\iM}$ &
-  % The module type $\iM$ is well-formed in $\E$.
-  % See \cref{module:validity}.
-\end{tabular}\\
+\begin{description}[align=right, leftmargin=3.5cm]
+\item[$\wtm{\E}{\im}{\iM}$ :]
+  The module $\im$ is of type $\iM$ in $\E$.
+  See \cref{module:typing}.
+\item[$\submod{\E}{\iM}{\iM'}{\iM_r}$ :]
+  The module type $\iM$ is a subtype of $\iM'$ in $\E$.
+  See \cref{module:subtyping}.
+\item[$\Oreduce{\E}{\iM} = \iMO$ :]
+  The module type with operations $\iM$ can be reduced to a module
+  type without operations $\iMO$.
+  See \cref{module:strengthen,module:enrich}.
+  \TODO{Change bracket style ...}
+\end{description}
 
 Operations:\\
 \begin{tabular}{ll}
@@ -108,15 +105,6 @@ Environment accesses:\\
   & Normalizes the path $\iP$ in $\E$
 \end{tabular}
 
-% \begin{figure}[hbt]
-%   \input{theory/incrrules}
-% \end{figure}
-
-
-% \begin{figure}[hbt]
-%   \input{theory/transp}
-% \end{figure}
-
 \begin{figure}[tbp]
   \mprset{sep=1.5em}
   \input{theory/typing}\vspace{-3mm}
@@ -130,32 +118,38 @@ Environment accesses:\\
   \label{module:subtyping}
 \end{figure}
 
-\begin{figure}[hbt]
+\begin{figure}[tbp]
+  \input{theory/strengthen}
+  \caption{Module strengthening operation -- $\Sstrengthen{l}{\iP}{\iM}$}
+  \label{module:strengthen}
+\end{figure}
+
+\begin{figure}[tbp]
+  \input{theory/enrich}
+  \caption{Enrichment operation -- $\Senrich{\iC}{\iM}$}
+  \label{module:enrich}
+\end{figure}
+
+\begin{figure}[tbp]
   \input{theory/lookup}\vspace{-3mm}
   \caption{Lookup rules -- $\lookup{\E}{\ip} = \iM$}
   \label{module:lookup}
 % \end{figure}
 
 % \begin{figure}[hbt]
-  % \begin{subfigure}[t]{0.3\linewidth}
-  %   \begin{align*}
-  %     \Oforce{\E}{\Sstrengthen{l}{\iP}{\iM}}
-  %     &= \Oforce{\E}{\Ostrengthen{l}{\iP}{\iM}}\\
-  %     \Oforce{\E}{\Slet{\iC}{\iM}}
-  %     &= \Oforce{\E}{\Oenrich{\iC}{\iM}}\\
-  %     \Oforce{\E}{\Stransp{\iM}{\iM'}}
-  %     &= \Oforce{\E}{\Otransp{\iM}{\iM'}}\\
-  %     \Oforce{\E}{\iMO} &= \iMO
-  %   \end{align*}
-  % \end{subfigure}
-  \begin{subfigure}[t]{0.33\linewidth}
+  \begin{subfigure}[t]{0.5\linewidth}
+    \begin{align*}
+      \Oshape{\E}{\iM} &= \Oshape{\E}{\Oreduce{\E}{\iM}}\\
+      \Oshape{\E}{\Salias{\iP}} &= \Oshape{\E}{\resolve{\E}{\iP}}\\
+      \Oshape{\E}{\Ssig{\ix}{\iS}} &= \Ssig{\ix}{\iS}\\
+      \Oshape{\E}{\Sfunctor{\ix}{\iM}{\iM'}} &= \Sfunctor{\ix}{\iM}{\iM'}
+    \end{align*}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.5\linewidth}
     \begin{align*}
       \resolve{\E}{\iP}
       &= \Sstrengthen{}{\Onormalize{\E}{\iP}}{\lookup{\E}{\Onormalize{\E}{\iP}}}
-    \end{align*}
-  \end{subfigure}
-  \begin{subfigure}[t]{0.33\linewidth}
-    \begin{align*}
+      \\[1em]
       \Onormalize{\E}{\iP}
       &=
         \begin{dcases}

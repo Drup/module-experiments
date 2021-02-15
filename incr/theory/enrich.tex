@@ -1,0 +1,41 @@
+\begin{align*}
+  \Oenrich{\E}{\iC}{\iX}
+  &\to \Oenrich{\E}{\iC}{\lookup{\E}{\iX}}\\
+  \Oenrich{\E}{\iC}{\iP.\iX}
+  &\to \Oenrich{\E}{\iC}{\lookup{\E}{\iP.\iX}}\\
+  % \Oenrich{\E}{\iC}{(\Swith{\iM}{\iC'})}
+  % &\to \Oenrich{\E}{\iC}{\Oenrich{\E}{\iC'}{\iM}}\\
+  \Oenrich{\E}{\iC}{\Salias{\iP}}
+  &\to \Salias{\iP} &\text{when } \Oenrich{\E}{\iC}{\resolve{\E}{\iP}}\to \_\\
+  % \Oenrich{\E}{\iC}{\Stransp{\iM}{\iM'}}
+  % &\to \Stransp{\Oenrich{\E}{\iC}{\iM}}{\iM'}\\
+  \Oenrich{\E}{\iC}{(\Sfunctor{\ix}{\iM}{\iM'})}
+  &\to \texttt{fail}\\
+  \Oenrich{\E}{\iC}{\Ssig{\ix}{\iS}}
+  &\to \Ssig{\ix}{\Oenrich{\E}{\iC}{\iS}}\\[4mm]
+  %
+  \Oenrich{\E}{t = \tau'}{\Stype{t}{\tau};\iS}
+  &\to \Stype{t}{\tau'};\iS
+  &\text{when } \subtyp{\E}{\tau'}{\tau}\\
+  \Oenrich{\E}{\ix : \iM'}{\Smodulety{\ix}{\iM};\iS}
+  &\to \Smodulety{\ix}{\iM'};\iS
+  &\text{when } \submod{\E}{\iM'}{\iM}{\_}\\
+  \Oenrich{\E}{\ix.\ip.t = \tau}{\Smodulety{\ix}{\iM};\iS}
+  &\to \Smodulety{\ix}{\Oenrich{\E}{\ip.t = \tau}{\iM}};\iS\\
+  \Oenrich{\E}{\ix.\ip : \iM'}{\Smodulety{\ix}{\iM};\iS}
+  &\to \Smodulety{\ix}{\Oenrich{\E}{\ip : \iM'}{\iM}};\iS\\
+  \Oenrich{\E}{\iC}{(\iD;\iS)}
+  &\to \iD;\Oenrich{\E}{\iC}{\iS}
+  &\text{when } id(\iD) \text{ is not a prefix of } id(\iC)\\[4mm]
+  %
+  \Oenrich{\E}{\iC}{(\Sstrengthen{l}{\ip}{\iM})}
+  &\to \Oenrich{\E}{\iC}{\Ostrengthen{\E}{l}{\ip}{\iM}}\\
+  \Oenrich{\E}{\iC}{\Senrich{\iC'}{\iM}}
+  &\to \Oenrich{\E}{\iC}{\Oenrich{\E}{\iC'}{\iM}}\\
+\end{align*}\vspace{-3mm}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main.tex"
+%%% End:
+
