@@ -17,7 +17,7 @@
   % { \wtm{\E}{\im}{\iM} }
   % \and
   \inferrule
-  { \wfm{\E}{\iM} \\ \wtm{\E}{\im}{\iM} }
+  { \wtm{\E}{\im}{\iM'} \\\submod{\E}{\iM'}{\iM}{\_} }
   { \wtm{\E}{\Sconstraint{\im}{\iM}}{\iM} }
   \and
   \inferrule
@@ -27,11 +27,12 @@
   \and
   \inferrule
   { \wtm{\E}{\im_f}{\Sfunctor{\ix}{\iM_a}{\iM_r}} \\
+    \iy \text{ fresh}\\
     \wtm{\E}{\im}{\iM} \\
     \submod{\E}{\iM}{\iM_a}{\iM_c}
   }
   { \wtm{\E}{\Sapp{\im_f}{\im}}
-    {\Ssubst{\ix : \iM_c}{\iM_r}} }
+    {\Ssubst{\iy : \iM_c}{\subst{\ix}{\iy}{\iM_r}}} }
   \and
   % \inferrule
   % { \wtm{\E}{\im_f}{\Sfunctor{\ix}{\iM}{\iM_r}} \\
