@@ -1,8 +1,8 @@
-open Core_types
+open Types.Core
 
 type t = {
   (* types : Modules.path Ident.Map.t ; *)
-  modules : Modules.mod_path Ident.Map.t ;
+  modules : Types.Modules.mod_path Ident.Map.t ;
   (* module_types : Modules.path Ident.Map.t ; *)
 }
 

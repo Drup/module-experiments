@@ -1,14 +1,14 @@
-open Modules
+open Types
 
 type error =
-  | Unbound_modtype of path
+  | Unbound_modtype of Modules.path
   | Already_seen of field * string
 
 exception Error of error
 let error e = raise (Error e)
 
 let rec check_modtype_core env = function
-  | TPath path ->
+  | Modules.TPath path ->
     begin
       try ignore @@ Env.lookup_module_type env path with
       | Not_found -> error @@ Unbound_modtype path
@@ -25,11 +25,11 @@ and check_modtype = assert false
 and check_signature env s =
   let mty = Modules.Core (Signature s) in
   let env = Env.add_module s.sig_self mty env in
-  FieldMap.iter (fun _ vty -> Core.Typing.val_type env vty) s.sig_values ;
-  FieldMap.iter (fun _ decl -> match decl.definition with
+  FieldMap.iter (fun _ vty -> Core_check.Validity.val_type env vty) s.sig_values ;
+  FieldMap.iter (fun _ decl -> match decl.Modules.definition with
           None -> ()
         | Some typ ->
-          Core.Typing.def_type env typ)
+          Core_check.Validity.def_type env typ)
     s.sig_types ;
   FieldMap.iter (fun _ mty -> check_modtype env mty) s.sig_modules ;
   FieldMap.iter (fun _ mty -> check_modtype env mty) s.sig_module_types ;

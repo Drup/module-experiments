@@ -1,12 +1,14 @@
+open Types
+
 type t = {
-  values : Core_types.val_type Ident.tbl ;
+  values : Core.val_type Ident.tbl ;
   types : Modules.type_decl Ident.tbl ;
   modules : Modules.mod_type Ident.tbl ;
   module_types : Modules.mod_type Ident.tbl ;
 }
 
 type _ key =
-  | Value : Core_types.val_type key
+  | Value : Core.val_type key
   | Type : Modules.type_decl key
   | Module : Modules.mod_type key
   | Module_type : Modules.mod_type key
@@ -48,10 +50,10 @@ let add_module_type = add Module_type
 
 let empty_sig id = {Modules.
   sig_self = id ;
-  sig_values = Modules.FieldMap.empty ;
-  sig_types = Modules.FieldMap.empty ;
-  sig_modules = Modules.FieldMap.empty ;
-  sig_module_types = Modules.FieldMap.empty ;
+  sig_values = FieldMap.empty ;
+  sig_types = FieldMap.empty ;
+  sig_modules = FieldMap.empty ;
+  sig_module_types = FieldMap.empty ;
 }
 
 let fold_with name f env0 l0 =
@@ -61,24 +63,24 @@ let fold_with name f env0 l0 =
   in
   let add_item item (s : Modules.signature) = match item with
     | Modules.Value_sig (field, decl) ->
-      if Modules.FieldMap.mem field s.sig_values then
+      if FieldMap.mem field s.sig_values then
         raise (Error (Already_defined item));
-      let sig_values = Modules.FieldMap.add field decl s.sig_values in
+      let sig_values = FieldMap.add field decl s.sig_values in
       {s with sig_values }
     | Type_sig (field, decl) ->
-      if Modules.FieldMap.mem field s.sig_types then
+      if FieldMap.mem field s.sig_types then
         raise (Error (Already_defined item));
-      let sig_types = Modules.FieldMap.add field decl s.sig_types in
+      let sig_types = FieldMap.add field decl s.sig_types in
       {s with sig_types }
     | Module_sig (field, decl) ->
-      if Modules.FieldMap.mem field s.sig_modules then
+      if FieldMap.mem field s.sig_modules then
         raise (Error (Already_defined item));
-      let sig_modules = Modules.FieldMap.add field decl s.sig_modules in
+      let sig_modules = FieldMap.add field decl s.sig_modules in
       {s with sig_modules }
     | Module_type_sig (field, decl) ->
-      if Modules.FieldMap.mem field s.sig_module_types then
+      if FieldMap.mem field s.sig_module_types then
         raise (Error (Already_defined item));
-      let sig_module_types = Modules.FieldMap.add field decl s.sig_module_types in
+      let sig_module_types = FieldMap.add field decl s.sig_module_types in
       {s with sig_module_types }
   in
   let rec aux_fold env signature = function
@@ -135,14 +137,20 @@ let compute_functor_app
   : (t -> f:Modules.mod_type -> arg:Modules.mod_path -> Modules.mod_type) ref
   = ref (fun _ ~f:_ ~arg:_ -> assert false)
 
+let transl_mod_path
+  : (t -> Parsetree.Modules.mod_path -> Types.Modules.mod_path) ref
+  = ref (fun _ _ -> assert false)
+
+(** Lookup of resolved names *)
+
 let lookup_raw_in_sig
-  : type a . key:a key -> Modules.field -> Modules.signature -> a
+  : type a . key:a key -> field -> Modules.signature -> a
   = fun ~key field s ->
     match key with
-    | Value -> Modules.FieldMap.find field s.sig_values
-    | Type -> Modules.FieldMap.find field s.sig_types
-    | Module -> Modules.FieldMap.find field s.sig_modules
-    | Module_type -> Modules.FieldMap.find field s.sig_module_types
+    | Value -> FieldMap.find field s.sig_values
+    | Type -> FieldMap.find field s.sig_types
+    | Module -> FieldMap.find field s.sig_modules
+    | Module_type -> FieldMap.find field s.sig_module_types
 
 let subst_self_in_sig
   : type a . self:Ident.t -> path:Modules.mod_path -> sort:a key -> a -> a
@@ -160,16 +168,16 @@ let lookup_in_sig ~key path field s =
   let elt = lookup_raw_in_sig ~key field s in
   subst_self_in_sig ~self:s.sig_self ~path ~sort:key elt
 
-let rec lookup_module : t -> Modules.mod_path -> _
+let rec lookup_module_internal : t -> Modules.mod_path -> _
   = fun env path0 ->
     match path0 with
     | Path p -> lookup Module env p
     | Ascription (path, ascr_mty) -> 
-      let path_mty = lookup_module env path in
+      let path_mty = lookup_module_internal env path in
       let mty = !compute_ascription env path_mty ascr_mty in
       mty
     | Apply (path_f, path_arg) ->
-      let mty_f = lookup_module env path_f in
+      let mty_f = lookup_module_internal env path_f in
       let mty = !compute_functor_app env ~f:mty_f ~arg:path_arg in
       mty
 
@@ -178,27 +186,41 @@ and lookup : type a . a key -> t -> Modules.path -> a
     match p with
     | PathId id -> lookup_in_env ~key id env
     | PathProj { path ; field } ->
-      let path_mty = lookup_module env path in
+      let path_mty = lookup_module_internal env path in
       let s = !compute_signature env path_mty in
       lookup_in_sig ~key path field s
 
 let try_lookup f env x = try Some (f env x) with Not_found -> None
 
-let lookup_module = try_lookup lookup_module
+let lookup_module = try_lookup lookup_module_internal
 let lookup_value = try_lookup @@ lookup Value
 let lookup_type = try_lookup @@ lookup Type
 let lookup_module_type = try_lookup @@ lookup Module_type
 
-let find key env id =
-  try 
-    let id, _ = Ident.Map.find id (select key env) in
-    Some id
-  with Not_found -> None
+(** Finding unresolved names *)
 
-let find_module = find Module
-let find_value = find Value
-let find_type = find Type
-let find_module_type = find Module_type
+let find_ident key env id =
+  Ident.Map.find id (select key env)
+
+let find : type a . a key -> t -> Parsetree.Modules.path -> Modules.path * a
+  = fun key env path ->
+    match path with 
+    | PathId id ->
+      let id, def = find_ident key env id in 
+      PathId id, def
+    | PathProj { path ; field } ->
+      let path = !transl_mod_path env path in
+      let path_mty = lookup_module_internal env path in
+      let s = !compute_signature env path_mty in
+      let def = lookup_in_sig ~key path field s in
+      PathProj {path; field}, def
+
+let try_find f env x = try Some (f env x) with _ -> None
+
+let find_module = try_find @@ find_ident Module
+let find_value = try_find @@ find Value
+let find_type = try_find @@ find Type
+let find_module_type = try_find @@ find Module_type
 
 (** Errors *)
   

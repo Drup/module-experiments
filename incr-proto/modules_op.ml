@@ -1,3 +1,4 @@
+open Types
 open Modules
 
 type error =
@@ -235,7 +236,7 @@ and subtype_value_decl env _path _field = function
   | `Right _ -> raise Ascription_fail
   | `Left _ -> None
   | `Both (ty1, ty2) ->
-    Core.Include.val_type env ty1 ty2;
+    Core_check.Include.val_type env ty1 ty2;
     Some ty2
 
 and subtype_type_decl env _path _field = function
@@ -256,7 +257,7 @@ and check_subtype_type_decl env tydecl1 tydecl2 =
     | None, None -> ()
     | Some _, None -> ()
     | None, Some _ -> raise Ascription_fail
-    | Some d1, Some d2  -> Core.Include.def_type env d1 d2
+    | Some d1, Some d2  -> Core_check.Include.def_type env d1 d2
   end;
   ()
 

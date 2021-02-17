@@ -1,15 +1,16 @@
-open Parsetree
+open Parsetree.Modules
+open Types
 module M = Modules
 module Op = Modules_op
 
 type error =
   | Unbound_module of Parsetree.name
-  | Unbound_module_type of Parsetree.path
-  | Unbound_type of Parsetree.path
+  | Unbound_module_type of Parsetree.Modules.path
+  | Unbound_type of Parsetree.Modules.path
   | Not_a_functor of M.mod_type
   | Not_a_signature of M.mod_type
-  | Not_a_mod_path of mod_path
-  | Not_a_path of path
+  | Not_a_mod_path of Parsetree.Modules.mod_path
+  | Not_a_path of Parsetree.Modules.path
   
 exception Ascription_fail
 exception Error of error
@@ -63,7 +64,7 @@ and type_definition env def =
   let add id f : M.signature_item option = Option.map f id in
   match def with
   | Value_str(id, term) ->
-    let ty = Core.Typing.term env term in
+    let ty = Core_check.Typing.term env term in
     add id @@ fun id -> Value_sig(id, ty)
   | Module_str(id, modl) ->
     let mty = type_module env modl in
@@ -73,19 +74,13 @@ and type_definition env def =
     add id @@ fun id -> Module_type_sig(id, mty)
   | Type_str(id, { manifest; definition }) ->
     let manifest =
-      let f ty =
-        let ty' = transl_module_type_path env ty in
-        begin try ignore @@ Env.lookup_type env ty' with
-          | Not_found -> error @@ Unbound_type ty
-        end;
-        ty'
-      in      
+      let f p = transl_type_path env p in      
       Option.map f manifest
     in
-    begin match definition with
-      | None -> ()
-      | Some ty -> Core.Typing.def_type env ty
-    end ;
+    let definition = match definition with
+      | None -> None
+      | Some ty -> Some (Core_check.Transl.def_type env ty)
+    in
     add id @@ fun id -> Type_sig(id, { manifest; definition })
 
 and transl_mod_path_internal : Env.t -> mod_term -> M.mod_path =
@@ -97,7 +92,7 @@ and transl_mod_path_internal : Env.t -> mod_term -> M.mod_path =
         | PathId name -> 
           let id =
             match Env.find_module env name with
-            | Some id -> id
+            | Some (id, _) -> id
             | None -> error @@ Unbound_module name
           in
           M.PathId id
@@ -120,8 +115,9 @@ and transl_mod_path_internal : Env.t -> mod_term -> M.mod_path =
   in
   let p = as_path env m in
   (* We try to resolve the module, to check it's a valid path *)
-  let (_ : Modules.mod_type) = Op.resolve env p in
-  p
+  match Env.lookup_module env p with
+  | None -> raise Exit
+  | Some _ -> p
 
 and transl_mod_path_opt env m =
   try Some (transl_mod_path_internal env m) with
@@ -132,44 +128,18 @@ and transl_mod_path env m =
   | Exit -> error @@ Not_a_mod_path m
 
 and transl_type_path env p =
-  try
-    match p with
-    | PathId name ->
-      let id =
-        match Env.find_type env name with
-        | Some id -> id
-        | None -> error @@ Unbound_type p
-      in    
-      M.PathId id
-    | PathProj {path; field} -> 
-      let path = transl_mod_path_internal env path in
-      M.PathProj { path; field}
-  with
-  | Exit -> error @@ Not_a_path p
+  match Env.find_type env p with
+  | Some (p,_) -> p
+  | None -> error @@ Unbound_type p
 
 and transl_module_type_path env p =
-  try
-    match p with
-    | PathId name ->
-      let id =
-        match Env.find_module_type env name with
-        | Some id -> id
-        | None -> error @@ Unbound_module_type p
-      in    
-      M.PathId id
-    | PathProj {path; field} -> 
-      let path = transl_mod_path_internal env path in
-      M.PathProj {path; field}
-  with
-  | Exit -> error @@ Not_a_path p
+  match Env.find_module_type env p with
+  | Some (p,_) -> p
+  | None -> error @@ Unbound_module_type p
 
 and transl_modtype env = function
   | TPath p ->
     let p' = transl_module_type_path env p in
-    begin
-      try ignore @@ Env.lookup_module_type env p' with
-      | Not_found -> error @@ Unbound_module_type p
-    end;
     M.Core (TPath p')
   | Alias p ->
     let p = transl_mod_path env p in
@@ -192,6 +162,7 @@ and transl_modtype env = function
         let mty = transl_modtype env mty in
         M.Module (ns, mty)
       | Type (ns, ty) ->
+        let ty = Core_check.Transl.def_type env ty in
         Type (ns, ty)
     in
     let mty = transl_modtype env mty in
@@ -211,6 +182,7 @@ and transl_signature_item env def =
   let add id f : M.signature_item option = Option.map f id in
   match def with
   | Value_sig(id, ty) ->
+    let ty = Core_check.Transl.val_type env ty in 
     add id @@ fun id -> Value_sig(id, ty)
   | Module_sig(id, mty) ->
     let mty = transl_modtype env mty in
@@ -220,19 +192,13 @@ and transl_signature_item env def =
     add id @@ fun id -> Module_sig(id, mty)
   | Type_sig(id, { manifest; definition }) ->
     let manifest =
-      let f ty =
-        let ty' = transl_module_type_path env ty in
-        begin try ignore @@ Env.lookup_type env ty' with
-          | Not_found -> error @@ Unbound_type ty
-        end;
-        ty'
-      in      
+      let f p = transl_type_path env p in
       Option.map f manifest
     in
-    begin match definition with
-      | None -> ()
-      | Some ty -> Core.Typing.def_type env ty
-    end ;
+    let definition = match definition with
+      | None -> None
+      | Some ty -> Some (Core_check.Transl.def_type env ty)
+    in
     add id @@ fun id -> Type_sig(id, { manifest; definition })
 
 (** Env mutual recursion *)
@@ -253,6 +219,7 @@ let () =
   Env.compute_ascription := compute_ascription;
   Env.compute_functor_app := compute_functor_app;
   Env.compute_signature := compute_signature;
+  Env.transl_mod_path := transl_mod_path;
   ()
 
 

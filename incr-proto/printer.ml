@@ -1,9 +1,12 @@
+open Types
 open Modules
 
 let fields f m fmt =
   FieldMap.iter (fun k d -> Fmt.sp fmt () ; f fmt k d) m
 
 let bound_name = Fmt.(option ~none:(unit "_") string)
+
+(** Path **)
 
 let rec path fmt = function
   | PathId id -> ident fmt id
@@ -13,6 +16,20 @@ and proj fmt { path ; field } =
   Fmt.pf fmt "@[<h>%a.%s@]" module_path path field
 
 and ident fmt id = Fmt.(option ~none:(unit "_") string) fmt (Ident.name id)
+
+(** Core **)
+
+and term fmt : Core.term -> _  = function
+  | Unit -> Fmt.pf fmt "()"
+  | Variable p -> path fmt p
+
+and val_type fmt : Core.val_type -> _ = function
+  | Unit -> Fmt.pf fmt "()"
+
+and def_type fmt : Core.def_type -> _ = function
+  | Alias ty -> val_type fmt ty
+
+(** Modules **)
 
 and module_path : _ -> mod_path -> unit =
   fun fmt mdt -> match mdt with
@@ -49,7 +66,7 @@ and enrichment fmt = function
   | Type (fields, ty) ->
     Fmt.pf fmt "type@ %a@ :@ %a"
       (Fmt.list ~sep:(Fmt.unit ".") Fmt.string) fields
-      Core_printer.def_type ty
+      def_type ty
 
 and module_self fmt id = match Ident.name id with
   | None -> ()
@@ -77,7 +94,7 @@ and signature_content fmt
     (fields value_declaration sig_values)
 
 and value_declaration fmt field ty =
-  Fmt.pf fmt "@[<2>val %s =@ %a@]" field Core_printer.val_type ty
+  Fmt.pf fmt "@[<2>val %s =@ %a@]" field val_type ty
 and type_declaration fmt field tydecl = 
   Fmt.pf fmt "@[<2>type %s%a@]" field type_decl tydecl
 and module_type_declaration fmt field mty = 
@@ -104,11 +121,11 @@ and type_decl fmt { manifest ; definition } =
   | Some p, None ->
     Fmt.pf fmt " =@ %a" path p
   | None, Some def ->
-    Fmt.pf fmt " =@ %a" Core_printer.def_type def
+    Fmt.pf fmt " =@ %a" def_type def
   | Some p, Some def ->
     Fmt.pf fmt " @[=@ %a@]@ @[=@ %a@]"
       path p
-      Core_printer.def_type def
+      def_type def
 
 and signature_item fmt (item : Modules.signature_item) = match item with
   | Value_sig (n, d) -> value_declaration fmt n d
@@ -118,6 +135,8 @@ and signature_item fmt (item : Modules.signature_item) = match item with
 
 module Untyped = struct
   open Parsetree
+  open Core
+  open Modules
   
   let rec path fmt = function
     | PathId id -> Fmt.string fmt id
@@ -126,6 +145,20 @@ module Untyped = struct
   and proj fmt { path ; field } =
     Fmt.pf fmt "@[<h>%a.%s@]" module_term path field
 
+  (** Core **)
+
+  and term fmt : Core.term -> _  = function
+    | Unit -> Fmt.pf fmt "()"
+    | Variable p -> path fmt p
+
+  and val_type fmt : Core.val_type -> _ = function
+    | Unit -> Fmt.pf fmt "()"
+
+  and def_type fmt : Core.def_type -> _ = function
+    | Alias ty -> val_type fmt ty
+
+  (** Modules **)
+  
   and module_self fmt = function
     | None -> ()
     | Some x -> Fmt.pf fmt " (%s)" x
@@ -165,7 +198,7 @@ module Untyped = struct
       Fmt.pf fmt "@[%a@ with@ %a@ =@ %a@]"
         module_type mty
         (Fmt.list ~sep:(Fmt.unit ".") Fmt.string) fields
-        Core_printer.def_type ty
+        def_type ty
     | TPath p -> path fmt p
     | Alias p -> Fmt.pf fmt "@[(= %a)@]" module_term p
     | Signature { sig_self; sig_content } ->
@@ -186,7 +219,7 @@ module Untyped = struct
     | Value_sig (name, ty) ->
       Fmt.pf fmt "@[<2>val %a =@ %a@]"
         bound_name name
-        Core_printer.val_type ty
+        val_type ty
     | Type_sig (name, tydecl) ->
       Fmt.pf fmt "@[<2>type %a %a@]"
         bound_name name
@@ -206,17 +239,17 @@ module Untyped = struct
     | Some p, None ->
       Fmt.pf fmt "=@ %a" path p
     | None, Some def ->
-      Fmt.pf fmt "=@ %a" Core_printer.def_type def
+      Fmt.pf fmt "=@ %a" def_type def
     | Some p, Some def ->
       Fmt.pf fmt "@[=@ %a@]@ @[=@ %a@]"
         path p
-        Core_printer.def_type def
+        def_type def
 
   and structure_item fmt = function
     | Value_str (name, t) ->
       Fmt.pf fmt "@[<2>let %a =@ %a@]"
         bound_name name
-        Core_printer.term t
+        term t
     | Type_str (name, tydecl) ->
       Fmt.pf fmt "@[<2>type %a %a@]"
         bound_name name

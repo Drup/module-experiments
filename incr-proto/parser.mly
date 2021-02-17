@@ -4,6 +4,8 @@
 
 open Input.Parse
 open Parsetree
+open Core
+open Modules
    
 let make_loc (startpos, endpos) = Location.Location (startpos, endpos)
 
@@ -77,17 +79,17 @@ let () =
 /* Entry points */
 
 %start implementation                   /* for implementation files */
-%type <Parsetree.structure_item list> implementation
+%type <Parsetree.Modules.structure_item list> implementation
 %start interface                        /* for interface files */
-%type <Parsetree.signature_item list> interface
+%type <Parsetree.Modules.signature_item list> interface
 %start toplevel_phrase                  /* for interactive use */
-%type <Parsetree.structure_item list> toplevel_phrase
+%type <Parsetree.Modules.structure_item list> toplevel_phrase
 %start use_file                         /* for the #use directive */
-%type <Parsetree.structure_item list> use_file
+%type <Parsetree.Modules.structure_item list> use_file
 %start expect_file
-%type <(Parsetree.structure_item list * int * int) list> expect_file
+%type <(Parsetree.Modules.structure_item list * int * int) list> expect_file
 
-%type <Parsetree.mod_term> mod_ext_longident
+%type <Parsetree.Modules.mod_term> mod_ext_longident
 
 %%
 
@@ -543,7 +545,8 @@ module_declaration_body:
 (* Core expressions *)
 
 expr:
-    LPAREN RPAREN { Core_types.Unit }
+  | LPAREN RPAREN { Unit }
+  | val_longident { Variable $1 }
 ;
 
 /* Value descriptions */
@@ -584,7 +587,7 @@ type_kind:
       { (None, None) }
   | EQUAL
     ty = core_type
-      { (None, Some (Alias ty : Core_types.def_type)) }
+      { (None, Some (Alias ty : def_type)) }
   | EQUAL
     ty = type_longident
       { (Some ty, None) }
@@ -688,6 +691,9 @@ longident_in_module_types:
 ;
 mod_longident:
     longident_in_values { $1 }
+;
+val_longident:
+    mk_longident(longident_in_values,LIDENT) { $1 }
 ;
 mod_ext_longident:
     longident_in_types { $1 }

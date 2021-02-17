@@ -1,3 +1,4 @@
+open Types
 open Modules
 
 type t = Core_subst.t = {
@@ -17,7 +18,7 @@ let add_module p v sub =
   | Path (PathId p') when Ident.equal p p' -> sub
   | _ -> { modules = Ident.Map.add p v sub.modules }
 
-let val_type sub (decl : Core_types.val_type) = Core_subst.val_type sub decl
+let val_type sub (decl : Core.val_type) = Core_subst.val_type sub decl
 
 let rec type_decl sub (decl : Modules.type_decl) : Modules.type_decl =
   { definition = (match decl.definition with

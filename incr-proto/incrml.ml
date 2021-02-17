@@ -7,7 +7,7 @@ include Peahell.Make(struct
 
     let name = "incrml"
 
-    type input = Parsetree.structure_item list
+    type input = Parsetree.Modules.structure_item list
     
     let options = []
 
