@@ -43,3 +43,10 @@ Error: The module
        is not included in
          sig val y = () end
 *)
+
+let x = R.x
+let y = R.y
+(*EXPECT
+val x = ()
+Error: Unbound variable R.y
+*)
