@@ -12,7 +12,7 @@ include Peahell.Make(struct
     let options = []
 
     type environment = Env.t
-    let initial_environment = Env.empty
+    let initial_environment = Env_initial.v
                                 
     let read_more str = 
       let i = ref (String.length str - 1) in

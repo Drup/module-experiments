@@ -53,8 +53,15 @@ let rec type_module :
 and type_functor_app env fun_mty arg_mty = 
   match Op.shape env fun_mty with
   | `Functor_type(param, param_mty, res_mty) ->
+    let param_fresh = Ident.create @@ Ident.name param in
     let arg_ascribed_mty = Op.subtype_modtype env arg_mty param_mty in
-    Let (param, Core arg_ascribed_mty, res_mty)
+    let res_mty =
+      let sub =
+        Subst.add_module param (Path (PathId param_fresh)) Subst.identity
+      in
+      Subst.mod_type sub res_mty
+    in
+    Let (param_fresh, Core arg_ascribed_mty, res_mty)
   | _ -> error @@ Not_a_functor fun_mty
 
 and type_structure env { str_self; str_content } =
@@ -72,16 +79,19 @@ and type_definition env def =
   | Module_type_str(id, mty) ->
     let mty = transl_modtype env mty in
     add id @@ fun id -> Module_type_sig(id, mty)
-  | Type_str(id, { manifest; definition }) ->
+  | Type_str(id, def) ->
+    add id @@ fun id -> Type_sig(id, type_type_declaration env def)
+
+and type_type_declaration env def = match def with
+  | Abstract -> Abstract
+  | TypeAlias p -> TypeAlias (Core_check.Transl.val_type env p)
+  | Definition { manifest; definition } -> 
     let manifest =
-      let f p = transl_type_path env p in      
+      let f p = transl_type_path env p in
       Option.map f manifest
     in
-    let definition = match definition with
-      | None -> None
-      | Some ty -> Some (Core_check.Transl.def_type env ty)
-    in
-    add id @@ fun id -> Type_sig(id, { manifest; definition })
+    let definition = Core_check.Transl.def_type env definition in
+    Definition { manifest; definition }
 
 and transl_mod_path_internal : Env.t -> mod_term -> M.mod_path =
   fun env m ->
@@ -162,7 +172,7 @@ and transl_modtype env = function
         let mty = transl_modtype env mty in
         M.Module (ns, mty)
       | Type (ns, ty) ->
-        let ty = Core_check.Transl.def_type env ty in
+        let ty = Core_check.Transl.val_type env ty in
         Type (ns, ty)
     in
     let mty = transl_modtype env mty in
@@ -190,16 +200,19 @@ and transl_signature_item env def =
   | Module_type_sig(id, mty) ->
     let mty = transl_modtype env mty in
     add id @@ fun id -> Module_sig(id, mty)
-  | Type_sig(id, { manifest; definition }) ->
+  | Type_sig(id, def) ->
+    add id @@ fun id -> Type_sig(id, type_type_declaration env def)
+
+and transl_type_declaration env def : M.type_decl = match def with
+  | Abstract -> Abstract
+  | TypeAlias p -> TypeAlias (Core_check.Transl.val_type env p)
+  | Definition { manifest; definition } -> 
     let manifest =
       let f p = transl_type_path env p in
       Option.map f manifest
     in
-    let definition = match definition with
-      | None -> None
-      | Some ty -> Some (Core_check.Transl.def_type env ty)
-    in
-    add id @@ fun id -> Type_sig(id, { manifest; definition })
+    let definition = Core_check.Transl.def_type env definition in
+    Definition { manifest; definition }
 
 (** Env mutual recursion *)
 

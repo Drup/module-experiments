@@ -13,19 +13,23 @@ module rec Core : sig
     | Unit
     | Variable of Modules.path
 
-  type val_type = Unit
+  type val_type =
+    | Type of Modules.path
 
   type def_type =
-    | Alias of val_type
+    | Unit
 end = Core
 
 and Modules : sig
 
-  type type_decl = {
-    manifest : path option ;
-    definition : Core.def_type option ;
-  }
-  (** abstract or manifest *)
+  type type_declaration =
+    | Abstract
+    | TypeAlias of Core.val_type
+    | Definition of {
+        manifest : path option ;
+        definition : Core.def_type ;
+      }
+  (** A type declaration : abstract, alias or definition *)
 
   and mod_type =
     | TPath of path
@@ -46,7 +50,7 @@ and Modules : sig
 
   and enrichment =
     | Module of field list * mod_type (** X.Y.Z : M *)
-    | Type of field list * Core.def_type (** X.Y.Z.t = τ *)
+    | Type of field list * Core.val_type (** X.Y.Z.t = τ *)
 
   and signature = {
     sig_self : bound_name ;
@@ -55,7 +59,7 @@ and Modules : sig
   and signature_item =
     | Value_sig of bound_name * Core.val_type
     (** val x: ty *)
-    | Type_sig of bound_name * type_decl
+    | Type_sig of bound_name * type_declaration
     (** type t :: k [= ty] *)
     | Module_sig of bound_name * mod_type
     (** module X: mty *)
@@ -94,7 +98,7 @@ and Modules : sig
   and structure_item =
       Value_str of bound_name * Core.term
     (** let x = expr *)
-    | Type_str of bound_name * type_decl
+    | Type_str of bound_name * type_declaration
     (** type t :: k = ty *)
     | Module_str of bound_name * mod_term
     (** module X = mod *)

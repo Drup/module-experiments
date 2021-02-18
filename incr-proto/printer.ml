@@ -24,10 +24,10 @@ and term fmt : Core.term -> _  = function
   | Variable p -> path fmt p
 
 and val_type fmt : Core.val_type -> _ = function
-  | Unit -> Fmt.pf fmt "()"
+  | Type t -> path fmt t
 
 and def_type fmt : Core.def_type -> _ = function
-  | Alias ty -> val_type fmt ty
+  | Unit -> Fmt.pf fmt "()"
 
 (** Modules **)
 
@@ -66,7 +66,7 @@ and enrichment fmt = function
   | Type (fields, ty) ->
     Fmt.pf fmt "type@ %a@ :@ %a"
       (Fmt.list ~sep:(Fmt.unit ".") Fmt.string) fields
-      def_type ty
+      val_type ty
 
 and module_self fmt id = match Ident.name id with
   | None -> ()
@@ -94,7 +94,7 @@ and signature_content fmt
     (fields value_declaration sig_values)
 
 and value_declaration fmt field ty =
-  Fmt.pf fmt "@[<2>val %s =@ %a@]" field val_type ty
+  Fmt.pf fmt "@[<2>val %s :@ %a@]" field val_type ty
 and type_declaration fmt field tydecl = 
   Fmt.pf fmt "@[<2>type %s%a@]" field type_decl tydecl
 and module_type_declaration fmt field mty = 
@@ -115,17 +115,16 @@ and module_declaration fmt name mty = match mty with
       name
       module_type mty
 
-and type_decl fmt { manifest ; definition } =
-  match manifest, definition with
-  | None, None -> ()
-  | Some p, None ->
-    Fmt.pf fmt " =@ %a" path p
-  | None, Some def ->
-    Fmt.pf fmt " =@ %a" def_type def
-  | Some p, Some def ->
+and type_decl fmt = function
+  | Abstract -> ()
+  | TypeAlias ty ->
+    Fmt.pf fmt " =@ %a" val_type ty
+  | Definition { manifest = None; definition } ->
+    Fmt.pf fmt " =@ %a" def_type definition
+  | Definition { manifest = Some p; definition } -> 
     Fmt.pf fmt " @[=@ %a@]@ @[=@ %a@]"
       path p
-      def_type def
+      def_type definition
 
 and signature_item fmt (item : Modules.signature_item) = match item with
   | Value_sig (n, d) -> value_declaration fmt n d
@@ -152,10 +151,10 @@ module Untyped = struct
     | Variable p -> path fmt p
 
   and val_type fmt : Core.val_type -> _ = function
-    | Unit -> Fmt.pf fmt "()"
+    | Type t -> path fmt t
 
   and def_type fmt : Core.def_type -> _ = function
-    | Alias ty -> val_type fmt ty
+    | Unit -> Fmt.pf fmt "()"
 
   (** Modules **)
   
@@ -198,7 +197,7 @@ module Untyped = struct
       Fmt.pf fmt "@[%a@ with@ %a@ =@ %a@]"
         module_type mty
         (Fmt.list ~sep:(Fmt.unit ".") Fmt.string) fields
-        def_type ty
+        val_type ty
     | TPath p -> path fmt p
     | Alias p -> Fmt.pf fmt "@[(= %a)@]" module_term p
     | Signature { sig_self; sig_content } ->
@@ -217,7 +216,7 @@ module Untyped = struct
   
   and signature_item fmt = function
     | Value_sig (name, ty) ->
-      Fmt.pf fmt "@[<2>val %a =@ %a@]"
+      Fmt.pf fmt "@[<2>val %a :@ %a@]"
         bound_name name
         val_type ty
     | Type_sig (name, tydecl) ->
@@ -233,17 +232,16 @@ module Untyped = struct
         bound_name name
         module_type mty
 
-  and type_decl fmt { manifest ; definition } =
-    match manifest, definition with
-    | None, None -> ()
-    | Some p, None ->
-      Fmt.pf fmt "=@ %a" path p
-    | None, Some def ->
-      Fmt.pf fmt "=@ %a" def_type def
-    | Some p, Some def ->
-      Fmt.pf fmt "@[=@ %a@]@ @[=@ %a@]"
+  and type_decl fmt = function
+    | Abstract -> ()
+    | TypeAlias ty ->
+      Fmt.pf fmt " =@ %a" val_type ty
+    | Definition { manifest = None; definition } ->
+      Fmt.pf fmt " =@ %a" def_type definition
+    | Definition { manifest = Some p; definition } -> 
+      Fmt.pf fmt " @[=@ %a@]@ @[=@ %a@]"
         path p
-        def_type def
+        def_type definition
 
   and structure_item fmt = function
     | Value_str (name, t) ->

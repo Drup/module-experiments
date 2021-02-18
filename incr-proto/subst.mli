@@ -1,6 +1,6 @@
 open Types
 
-type t = Core_subst.t
+type t
 
 val identity: t
 
@@ -8,6 +8,7 @@ val identity: t
  * val add_module: Ident.t -> qid -> t -> t
  * val add_module_type: Ident.t -> qid -> t -> t *)
 
+val add_type: Ident.t -> path -> t -> t
 val add_module: Ident.t -> Modules.mod_path -> t -> t
 
 val type_path: t -> Modules.path -> Modules.path

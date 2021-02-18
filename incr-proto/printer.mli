@@ -3,6 +3,9 @@ open Types
 val path : Modules.path Fmt.t
 val module_path : Modules.mod_path Fmt.t
 
+val def_type : Core.def_type Fmt.t
+val val_type : Core.val_type Fmt.t
+
 val enrichment : Modules.enrichment Fmt.t
 val module_type : Modules.mod_type Fmt.t
 

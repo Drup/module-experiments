@@ -1,38 +1,58 @@
 open Types
 open Modules
 
-type t = Core_subst.t = {
-  (* types : Modules.path Ident.Map.t ; *)
-  modules : Modules.mod_path Ident.Map.t ;
+open Types.Core
+
+type t = {
+  types : Types.path Ident.Map.t ;
+  modules : Types.Modules.mod_path Ident.Map.t ;
   (* module_types : Modules.path Ident.Map.t ; *)
 }
 
 let identity : t = {
-  (* types = Ident.Map.empty ; *)
+  types = Ident.Map.empty ;
   modules = Ident.Map.empty ;
   (* module_types = Ident.Map.empty ; *)
 }
 
+
+let add_type p v sub =
+  match v with
+  | PathId p' when Ident.equal p p' -> sub
+  | _ -> { sub with types = Ident.Map.add p v sub.types }
+
 let add_module p v sub =
   match v with
   | Path (PathId p') when Ident.equal p p' -> sub
-  | _ -> { modules = Ident.Map.add p v sub.modules }
+  | _ -> { sub with modules = Ident.Map.add p v sub.modules }
 
-let val_type sub (decl : Core.val_type) = Core_subst.val_type sub decl
+let rec val_type
+  : t -> val_type -> val_type
+  = fun sub -> function
+    | Type p -> Type (type_path sub p)
 
-let rec type_decl sub (decl : Modules.type_decl) : Modules.type_decl =
-  { definition = (match decl.definition with
-        | None -> None
-        | Some dty -> Some (Core_subst.def_type sub dty)) ;
-    manifest = match decl.manifest with
-        None -> None
-      | Some p -> Some (type_path sub p)
-  }
+and def_type
+  : t -> def_type -> def_type
+  = fun env -> function
+    | Unit -> Unit
+
+and type_decl sub (decl : Modules.type_decl) : Modules.type_decl =
+  match decl with
+  | Abstract -> Abstract
+  | TypeAlias p -> TypeAlias (val_type sub p)
+  | Definition { manifest; definition } ->
+    let definition = def_type sub definition in
+    let manifest = Option.map (type_path sub) manifest in
+    Definition { manifest; definition }
 
 and proj sub {Modules. path ; field } =
   {path = mod_path sub path ; field }
 and type_path sub p = match p with
-  | PathId _id -> p
+  | PathId id ->
+    begin
+      try Ident.Map.lookup id sub.types with
+      | Not_found -> PathId id
+    end
   | PathProj p -> PathProj (proj sub p)
 
 and mod_path sub (p : mod_path) =

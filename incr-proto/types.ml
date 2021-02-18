@@ -17,20 +17,24 @@ module rec Core : sig
     | Unit
     | Variable of Modules.path
 
-  type val_type = Unit
+  type val_type =
+    | Type of Modules.path
 
   type def_type =
-    | Alias of val_type
+    | Unit
 
 end = Core
 
 and Modules : sig
 
-  type type_decl = {
-    manifest : path option ;
-    definition : Core.def_type option ;
-  }
-  (** abstract or manifest *)
+  type type_decl =
+    | Abstract
+    | TypeAlias of Core.val_type
+    | Definition of {
+        manifest : path option ;
+        definition : Core.def_type ;
+      }
+  (** A type declaration : abstract, alias or definition *)
 
   and mod_type_core =
     | TPath of path
@@ -55,7 +59,7 @@ and Modules : sig
 
   and enrichment =
     | Module of field list * mod_type (** X.Y.Z : M *)
-    | Type of field list * Core.def_type (** X.Y.Z.t = τ *)
+    | Type of field list * Core.val_type (** X.Y.Z.t = τ *)
 
   and signature = {
     sig_self : Ident.t ;

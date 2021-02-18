@@ -4,7 +4,6 @@ open Modules
 type error =
   | Unbound_module of mod_path
   | Unbound_module_type of path
-  | Unbound_type of path
   | Not_a_subtype of mod_type * mod_type
   | Path_not_included of mod_path * mod_type
   | Cannot_eliminate_let of Modules.mod_type
@@ -55,13 +54,13 @@ and strengthen_signature env path
     sig_modules = FieldMap.mapi (strengthen_module_decl env path) sig_modules ;
   }
 
-and strengthen_type_decl _env path field _decl = 
-  let new_decl = {
-    manifest = Some (PathProj {path; field}) ;
-    definition = None ;
-  }
-  in
-  new_decl
+and strengthen_type_decl _env path field decl =
+  match decl with
+  | Abstract 
+  | TypeAlias _ ->
+    TypeAlias (Type (PathProj {path; field}))
+  | Definition { manifest; definition } ->
+    Definition { manifest = Some (PathProj {path; field}) ; definition }
 
 and strengthen_module_decl _env path field _mty =
   Core (Alias (Path (PathProj {path; field})))
@@ -105,8 +104,8 @@ and enrich_signature ~env eq
 
 and enrich_type_decl ~env eq field tydecl = match eq with
   | Type ([field'], ty) when String.equal field field' ->
-    let tydecl' = { manifest = None ; definition = Some ty } in
-    check_subtype_type_decl env tydecl tydecl';
+    let tydecl' = TypeAlias ty in
+    check_subtype_type_decl ~env tydecl tydecl';
     tydecl'
   | _ -> tydecl
 
@@ -173,7 +172,7 @@ and is_no_alias : mod_type_core -> bool = function
 (* We build a *canonical* path with the ascription.
    
    Invariant: 
-   The left hand side of the ascription is a shape: either a signature
+   The right hand side of the ascription is a shape: either a signature
    or a functor.
    It must not contain aliases (or paths that could lead to an alias).
    TODO: Split path subtyping into "canonical" and "resolving" to not 
@@ -239,25 +238,44 @@ and subtype_value_decl env _path _field = function
     Core_check.Include.val_type env ty1 ty2;
     Some ty2
 
-and subtype_type_decl env _path _field = function
+and subtype_type_decl env path field = function
   | `Right _ -> raise Ascription_fail
   | `Left tydecl -> Some tydecl
   | `Both (tydecl1, tydecl2) ->
-    check_subtype_type_decl env tydecl1 tydecl2;
+    let path = (PathProj { path ; field }) in
+    check_subtype_type_decl ~env ~path tydecl1 tydecl2;
     Some tydecl1
 
-and check_subtype_type_decl env tydecl1 tydecl2 = 
-  begin match tydecl1.manifest, tydecl2.manifest with
-    | None, None -> ()
-    | Some _, None -> ()
-    | None, Some _ -> raise Ascription_fail
-    | Some p1, Some p2 -> check_equiv_type_path env p1 p2
-  end;
-  begin match tydecl1.definition, tydecl2.definition with
-    | None, None -> ()
-    | Some _, None -> ()
-    | None, Some _ -> raise Ascription_fail
-    | Some d1, Some d2  -> Core_check.Include.def_type env d1 d2
+and check_subtype_type_decl ~env ?path tydecl1 tydecl2 =
+  let test_if_path f = match path with
+    | Some path -> f path
+    | None ->
+      raise Ascription_fail
+  in
+  begin match tydecl1, tydecl2 with
+    | _, Abstract -> ()
+    | Abstract, TypeAlias t
+    | Definition { manifest = None; definition = _ }, TypeAlias t ->
+      test_if_path @@ fun p ->
+      Core_check.Include.val_type env (Types.Core.Type p) t
+    | TypeAlias _, Definition _
+    | Abstract, Definition _ ->
+      raise Ascription_fail
+    | TypeAlias t1, TypeAlias t2 -> 
+      Core_check.Include.val_type env t1 t2
+    | Definition { manifest = Some t1; definition }, TypeAlias t2 ->
+      Core_check.Include.val_type env (Type t1) t2
+    | Definition def1, Definition def2 ->
+      begin match def1.manifest, def2.manifest with
+        | None, None -> ()
+        | Some _, None -> ()
+        | None, Some p2 -> 
+          test_if_path @@ fun p1 ->
+          if not @@ Core_check.Include.type_path env p1 p2 then
+            raise Ascription_fail
+        | Some p1, Some p2 -> check_equiv_type_path env p1 p2
+      end;
+      Core_check.Include.def_type env def1.definition def1.definition
   end;
   ()
 
@@ -278,9 +296,8 @@ and subtype_module_type_decl env _path _field = function
     let mty = Core (subtype_modtype env mty1 mty2) in
     Some mty
 
-
 and check_equiv_type_path env path1 path2 = 
-  if normalize_type env path1 = normalize_type env path2 then
+  if Core_check.Include.type_path env path1 path2 then
     ()
   else
     raise Ascription_fail
@@ -339,17 +356,6 @@ and normalize
     | Alias p -> normalize env p
     | _ -> p
 
-and normalize_type
-  : Env.t -> Modules.path -> Modules.path
-  = fun env p ->
-    let tydecl = match Env.lookup_type env p with
-      | Some m -> m
-      | None -> error @@ Unbound_type p
-    in
-    match tydecl.manifest with
-    | Some p -> normalize_type env p
-    | None -> p
-
 and shape
   : Env.t -> mod_type -> _
   = fun env mty ->
@@ -394,8 +400,6 @@ let prepare_error = function
     Report.errorf "Unbound module %a" Printer.module_path p
   | Unbound_module_type p ->
     Report.errorf "Unbound module type %a" Printer.path p
-  | Unbound_type p ->
-    Report.errorf "Unbound type %a" Printer.path p
 
 let () = Report.register_report_of_exn @@ function
   | Error e -> Some (prepare_error e)

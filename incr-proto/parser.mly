@@ -576,34 +576,33 @@ value_description:
 %inline type_declaration:
   TYPE
   id = opt_ident(LIDENT)
-  kind = type_kind
-    { let manifest, definition = kind in
-      id, { manifest ; definition }
-    }
+  kind = type_declaration_core
+    { id, (kind : type_declaration) }
 ;
 
-type_kind:
+type_declaration_core:
   | /*empty*/
-      { (None, None) }
+      { Abstract }
+  | manifest = type_manifest
+    EQUAL
+    definition = def_type
+      { Definition {manifest; definition} }
   | EQUAL
     ty = core_type
-      { (None, Some (Alias ty : def_type)) }
-  | EQUAL
-    ty = type_longident
-      { (Some ty, None) }
-  (* | EQUAL
-   *   oty = type_synonym
-   *   cs = constructor_declarations
-   *     { (Ptype_variant cs, oty) }
-   * | EQUAL
-   *   oty = type_synonym
-   *   LBRACE ls = label_declarations RBRACE
-   *     { (Ptype_record ls, oty) } *)
+      { TypeAlias ty }
+;
+%inline type_manifest:
+  | { None }
+  | EQUAL ty = type_longident { Some ty }
+;
+
+def_type:
+  | LPAREN RPAREN { Unit }
 ;
 
 with_constraint:
     TYPE name = fields(LIDENT) EQUAL ty = core_type
-      { (Type (name, Alias ty) : enrichment) }
+      { (Type (name, ty) : enrichment) }
   | MODULE name = fields(UIDENT) EQUAL m = mod_ext_longident
       { (Module (name, Alias m) : enrichment) }
   | MODULE name = fields(UIDENT) COLON m = module_type %prec below_WITH
@@ -619,10 +618,10 @@ core_type:
 ;
 
 atomic_type:
-  | LPAREN RPAREN
-      { Unit }
   | LPAREN core_type RPAREN
       { $2 }
+  | type_longident
+      { Type $1 }
   (* | QUOTE ident
    *     { Ptyp_var $2 }
    * | UNDERSCORE
