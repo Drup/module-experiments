@@ -3,6 +3,7 @@ val create: string option -> t
 val name: t -> string option
 val equal: t -> t -> bool
 val compare: t -> t -> int
+val stamp : t -> int
 
 module Map : sig
   type ident

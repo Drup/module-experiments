@@ -12,6 +12,7 @@ let create s =
   {name = s; stamp = !currstamp}
 
 let name id = id.name
+let stamp id = id.stamp
 let equal id1 id2 = (id1.stamp = id2.stamp)
 
 module Map = struct

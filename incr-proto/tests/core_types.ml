@@ -80,16 +80,49 @@ Error: The type
 *)
 
 module X = struct type x end
-type testLookupFunctorDef = F(X).x
-module TestInclFunctorDef : sig type x = F(X).x end = F(X)
-module TestInclFunctorDef2 : sig type x = X.x end = F(X)
-module TestInclFunctorDef3 : sig type x = X.x end = struct type x = F(X).x end
 (*EXPECT
 module X : sig type x end
-type testLookupFunctorDef = F(X).x
-module TestInclFunctorDef : sig type x = F(X).x end
+*)
+
+module X = struct type x end
+module A = F(X)
+module B = F(X)
+module TestInclFunctorApplicative
+  : sig type x = A.x end = struct type x = B.x end
+module TestInclFunctorApplicative2
+  : sig type x = X.x end = struct type x = A.x end
+module TestInclFunctorApplicative3
+  : sig type x = X.x end = A
+module TestInclFunctorApplicative3
+  : sig type x = y end = A
+(*EXPECT
+module X : sig type x end
+module A = F(X)
+module B = F(X)
+module TestInclFunctorApplicative : sig type x = A.x end
+module TestInclFunctorApplicative2 : sig type x = X.x end
+module TestInclFunctorApplicative3 : sig type x = X.x end
 Error: The type
          F(X).x
        is not a subtype of
-         X.x
+         y
+*)
+
+
+type testLookupFunctorDef = F(X).x
+module TestInclFunctorDef : sig type x = F(X).x end = F(X)
+module TestInclFunctorDef2 : sig type x = testLookupFunctorDef end = F(X)
+module TestInclFunctorDef3 : sig type x = X.x end = F(X)
+module TestInclFunctorDef4 : sig type x = X.x end = struct type x = F(X).x end
+module TestInclFunctorDefFail : sig type x = y end = struct type x = F(X).x end
+(*EXPECT
+type testLookupFunctorDef = F(X).x
+module TestInclFunctorDef : sig type x = F(X).x end
+module TestInclFunctorDef2 : sig type x = testLookupFunctorDef end
+module TestInclFunctorDef3 : sig type x = X.x end
+module TestInclFunctorDef4 : sig type x = X.x end
+Error: The type
+         F(X).x
+       is not a subtype of
+         y
 *)

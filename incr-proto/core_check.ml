@@ -58,17 +58,24 @@ module Validity = struct
         | None -> error @@ Unknown_type p
       in
       match tydecl with
-      | Definition { manifest = None; definition = _ }
-      | Abstract -> p
       | TypeAlias Type p
       | Definition { manifest = Some p; definition = _ } ->
         normalize_type env p
+      | Definition { manifest = None; definition = _ }
+      | Abstract ->
+        Env.canonical_type env p
 
 end
 
 module Include = struct
   let type_path env path1 path2 =
-    Validity.normalize_type env path1 = Validity.normalize_type env path2
+    let path1' = Validity.normalize_type env path1 in
+    let path2' = Validity.normalize_type env path2 in
+    (* Fmt.epr
+     *   "@[<v2>Checking that the types equivalence@ %a = %a@ and@ %a = %a@]@."
+     *   Printer.path path1 Printer.path path1'
+     *   Printer.path path2 Printer.path path2'; *)
+    path1' = path2'
 
   let val_type
     : Env.t -> T.val_type -> T.val_type -> unit

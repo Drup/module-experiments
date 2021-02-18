@@ -179,6 +179,10 @@ let rec lookup_module_internal : t -> Modules.mod_path -> _
     | Apply (path_f, path_arg) ->
       let mty_f = lookup_module_internal env path_f in
       let mty = !compute_functor_app env ~f:mty_f ~arg:path_arg in
+      (* Fmt.epr "Lookup %a(%a) =@,  %a@."
+       *   Printer.module_path path_f
+       *   Printer.module_path path_arg
+       *   Printer.module_type mty; *)
       mty
 
 and lookup : type a . a key -> t -> Modules.path -> a
@@ -196,6 +200,20 @@ let lookup_module = try_lookup lookup_module_internal
 let lookup_value = try_lookup @@ lookup Value
 let lookup_type = try_lookup @@ lookup Type
 let lookup_module_type = try_lookup @@ lookup Module_type
+
+(** Canonical path, w/o transparent ascriptions *)
+
+let rec canonical_internal (p : Modules.mod_path) = match p with
+  | Path _ -> p
+  | Apply (f, p) -> Apply (canonical_internal f, canonical_internal p)
+  | Ascription (p, _) -> canonical_internal p
+
+let canonical_type env (p : Types.path) =
+  match p with
+  | PathId _ -> p
+  | PathProj {path;field} ->
+    let _ = lookup_type env p in
+    PathProj {path = canonical_internal path; field }
 
 (** Finding unresolved names *)
 

@@ -27,6 +27,8 @@ val lookup_type: t -> path -> Modules.type_decl option
 val lookup_module: t -> Modules.mod_path -> Modules.mod_type option
 val lookup_module_type: t -> path -> Modules.mod_type option
 
+val canonical_type : t -> Modules.path -> Modules.path
+
 val find_value : t -> Parsetree.path -> (path * Types.Core.val_type) option
 val find_type : t -> Parsetree.path -> (path * Modules.type_decl) option
 val find_module : t -> Parsetree.name -> (Ident.t * Modules.mod_type) option

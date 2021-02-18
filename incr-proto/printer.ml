@@ -15,7 +15,10 @@ let rec path fmt = function
 and proj fmt { path ; field } =
   Fmt.pf fmt "@[<h>%a.%s@]" module_path path field
 
-and ident fmt id = Fmt.(option ~none:(unit "_") string) fmt (Ident.name id)
+and ident fmt id =
+  Fmt.pf fmt "%a"
+    Fmt.(option ~none:(unit "_") string) (Ident.name id)
+    (* (Ident.stamp id) *)
 
 (** Core **)
 
