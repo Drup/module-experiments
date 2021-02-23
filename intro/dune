@@ -1,0 +1,5 @@
+(library
+ (name        demo)
+ (libraries  tyxml graphics cairo2 cairo2-gtk lablgtk2 gg)
+ (preprocess (pps ppx_deriving.std))
+)

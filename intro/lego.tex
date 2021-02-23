@@ -1,0 +1,43 @@
+\newlength{\brickwidth}
+\newlength{\brickheight}
+\newlength{\brickdia}
+\newlength{\brickdiaheight}
+\newlength{\brickmultipliedx}
+\newlength{\brickmultipliedy}
+\newlength{\halfbrickwidth}
+\setlength{\brickheight}{9.6mm}
+\setlength{\brickwidth}{8mm}
+\setlength{\brickdia}{2.8mm}
+\setlength{\brickdiaheight}{1mm}
+\setlength{\halfbrickwidth}{0.5\brickwidth}
+
+\newcommand{\startpos}[3]
+{($(0,#3\brickheight)+(7:#1\brickwidth)+(138:#2\halfbrickwidth)$)}
+\newcommand{\startposplusheight}[3]
+{($(0,#3\brickheight)+(7:#1\brickwidth)+(138:#2\halfbrickwidth)+(0mm,\brickheight)$)}
+\newcommand{\pinposone}[5]
+{($(0,#3\brickheight)+(7:#1\brickwidth)+(138:#2\halfbrickwidth)+(7:#4*\brickwidth)+(138:#5*\halfbrickwidth)+(-0.6\brickwidth,-\halfbrickwidth)+(-0.05\brickwidth,1.35\brickheight)$)}
+\newcommand{\pinpostwo}[5]
+{($(0,#3\brickheight)+(7:#1\brickwidth)+(138:#2\halfbrickwidth)+(7:#4*\brickwidth)+(138:#5*\halfbrickwidth)+(-0.6\brickwidth,-\halfbrickwidth)+(0.3\brickwidth,1.35\brickheight)$)}
+
+\newcommand{\pin}[2]{%
+  \filldraw[thick] #1 -- ++(0mm,-1.6\brickdiaheight) .. controls +(\brickdia,-0.1\brickheight) .. ++(2\brickdia,0mm) -- ++(0mm,1.6\brickdiaheight) -- cycle;
+  \filldraw[thick] #2 ellipse[x radius=\brickdia, y radius=\brickdiaheight];
+}
+
+\tikzset{
+  pics/brick/.style args={#1*#2 at #3,#4,#5}{code={
+      \setlength{\brickmultipliedx}{#1\brickwidth}
+      \setlength{\brickmultipliedy}{#2\brickwidth}
+      \filldraw[thick]
+      \startpos{#3}{#4}{#5} -- ++(7:\brickmultipliedx) -- ++(0mm,\brickheight) -- ++(138:0.5\brickmultipliedy) -- ++(187:\brickmultipliedx) -- ++(0mm,-\brickheight) -- cycle;
+      \draw[thick] \startpos{#3}{#4}{#5} -- ++(0mm,\brickheight) -- ++(138:0.5\brickmultipliedy);
+      \draw[thick] \startposplusheight{#3}{#4}{#5} -- ++(7:\brickmultipliedx);
+      \foreach \i in {1,...,#1} {
+        \foreach \j in {1,...,#2} {
+          \pin{\pinposone{#3}{#4}{#5}{\i}{\j}}{\pinpostwo{#3}{#4}{#5}{\i}{\j}}
+        }
+      }
+    }
+  }
+}

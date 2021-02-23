@@ -39,3 +39,4 @@ _minted*/
 
 *.tar
 *.pdfpc
+_build/
