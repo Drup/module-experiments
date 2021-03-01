@@ -494,7 +494,7 @@ end
 
 
 
-\begin{frame}[fragile,fragile]{The Ugly -- Part 1\hfill Aliases and functors}
+\begin{frame}[fragile]{Problem: Aliases and functors}
   
   {\bf Problem}: It is not sound to create an alias of a functor parameter:
 \begin{minted}{ocaml}
@@ -542,8 +542,52 @@ module MyKey <: Map.OrderedType = ...
   
 \end{frame}
 
+
+\begin{frame}[fragile,fragile,fragile]
+  \frametitle{Problem: The avoidance problem}
+
+  \textbf{Problem} Let's write the this C\&C (cool and contrived) functor:
+\begin{minted}{ocaml}
+module F (X : S) = struct
+  type a = X.t list
+  type b = X.t * int
+end
+\end{minted}
+
+  What's the type of:
+\begin{minted}{ocaml}
+module A = F(struct type t = A | B end)
+\end{minted}
+  \pause
+  The typechecker gives us:
+\begin{minted}{ocaml}
+module A : sig type a type b end
+\end{minted}
+  This is not very useful. 
+\end{frame}
+
+\begin{frame}[fragile]{Local bindings and inference}
+
+  We want to have a \emph{principal module type} for this.
+  \begin{itemize}
+  \item This type is used for inference
+  \item It does not have to appear in user signatures
+  \end{itemize}
+  \pause
+  
+  {\bf Solution}: Local module types:
+\begin{minted}{ocaml}
+module A : let X : ... in sig
+  type a = X.t list
+  type b = X.t * int
+end
+\end{minted}
+
+  We can then simplify this further down
+\end{frame}
+
 \begin{frame}[fragile]
-  \frametitle{The Ugly -- Part 2\hfill Eager operations}
+  \frametitle{Problem: Eager operations}
 
   \textbf{Problem}: Many operations on modules are expanded eagerly: \texttt{with}, \texttt{include}, \texttt{module type of}, strengthening, \dots
   \begin{itemize}
@@ -600,48 +644,6 @@ end
   \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile,fragile,fragile]
-  \frametitle{The Ugly -- Part 3\hfill The avoidance problem}
-
-  \textbf{Problem} Let's write the this C\&C (cool and contrived) functor:
-\begin{minted}{ocaml}
-module F (X : S) = struct
-  type a = X.t list
-  type b = X.t * int
-end
-\end{minted}
-
-  What's the type of:
-\begin{minted}{ocaml}
-module A = F(struct type t = A | B end)
-\end{minted}
-  \pause
-  The typechecker gives us:
-\begin{minted}{ocaml}
-module A : sig type a type b end
-\end{minted}
-  This is not very useful. 
-\end{frame}
-
-\begin{frame}[fragile,fragile]{Local bindings and inference}
-
-  We want to have a \emph{principal module type} for this.
-  \begin{itemize}
-  \item This type is used for inference
-  \item It does not have to appear in user signatures
-  \end{itemize}
-  \pause
-  
-  {\bf Solution}: Local module types:
-\begin{minted}{ocaml}
-module A : let X : ... in sig
-  type a = X.t list
-  type b = X.t * int
-end
-\end{minted}
-
-  We can then simplify this further down (incrementally, as before).
-\end{frame}
 
 \end{document}
 
