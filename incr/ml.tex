@@ -28,8 +28,15 @@ and singletons $\Salias{\iP}$.
 As with structures, signatures are a list of declarations noted $\iD$, and
 a ``Self'' variable. Operations are described in the subsequent section.
 
-The core language is left largely undefined in our calculus, except for qualified
-accesses.
+As described before, there are two kinds of paths.
+The first, $\ip$, is
+mostly used for \emph{dynamic} components, and is composed of a list of
+modules of the form $A.B.C$.
+The second, $\iP$, is mostly used for \emph{static} components such as types,
+and can additionally contain functor applications and transparent ascriptions,
+for instance $F(\ix).\iy$ or $\Stransp{\ix}{\iM}.\iy$
+
+Finally, the core language is left largely undefined in our calculus, except for qualified accesses.
 
 $\subst{\ix}{\iy}{\iM}$ denotes the substitution of variable $\ix$ by variable $\iy$ in $\iM$. We only substitute variables by other variables.
 
