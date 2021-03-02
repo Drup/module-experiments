@@ -1,0 +1,19 @@
+\section{Introduction}
+
+We propose an \emph{expressive}, \emph{syntactic} and \emph{parsimonious} module system.
+By expressive, we mean that we support a rich subset of features that have so far
+not been formalized together and allow the user for rich manipulation of modules, notably transparent ascriptions, module aliases, enrichment constraints and
+applicative functors. Unlike work like \cite{fing}, our rules are
+defined \emph{syntactically}, directly on the concrete syntax. This makes the rule easier to grasp, make deriving an inference algorithm almost immediate, and
+ensure that error messages and typing information are easier to surface to the user.
+Finally, this system is \emph{parsimonious}, in that it does the minimum amount of
+expansion required by using ideas similar to explicit substitutions for
+module operations. Module types can be quite large, and limiting the expansion
+can simplify error messages and improve the speed of the typechecker.
+
+TODO: Explain functor aliasing.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

@@ -34,7 +34,7 @@
 \newcommand\Sempty\varepsilon
 
 \newcommand\Senrich[2]{{#2}_{\left[#1\right]}}
-\newcommand\Sstrengthen[3]{#3/#2}
+\newcommand\Sstrengthen[2]{#2/#1}
 \newcommand\Ssubst[2]{\mathtt{let}\ #1\ \mathtt{in}\ #2}
 
 \newcommand\Slet[2]{\mathtt{let}\ #1 = #2}
@@ -66,7 +66,7 @@
 % Operation
 \newcommand\Oreduce[2]{\llparenthesis #2 \rrparenthesis_{#1}}
 \newcommand\Oenrich[3]{\Oreduce{#1}{\Senrich{#2}{#3}}}
-\newcommand\Ostrengthen[4]{\Oreduce{#1}{\Sstrengthen{#2}{#3}{#4}}}
+\newcommand\Ostrengthen[3]{\Oreduce{#1}{\Sstrengthen{#2}{#3}}}
 \newcommand\Osubst[3]{\Oreduce{#1}{\Ssubst{#2}{#3}}}
 
 \newcommand\Oshape[2]{\operatorname{shape}_{#1}(#2)}

@@ -1,48 +1,48 @@
 \begin{align*}
-  \Ostrengthen{\E}{l}{\iP}{\iX}
-  &\to \Ostrengthen{\E}{l}{\iP}{\lookup{\E}{\iX}}\\
-  \Ostrengthen{\E}{l}{\iP}{\iP'.\iX}
-  &\to \Ostrengthen{\E}{l}{\iP}{\lookup{\E}{\iP'.\iX}}\\
-  \Ostrengthen{\E}{l}{\iP}{\Salias{\iP'}}
+  \Ostrengthen{\E}{\iP}{\iX}
+  &\to \Ostrengthen{\E}{\iP}{\lookup{\E}{\iX}}\\
+  \Ostrengthen{\E}{\iP}{\iP'.\iX}
+  &\to \Ostrengthen{\E}{\iP}{\lookup{\E}{\iP'.\iX}}\\
+  \Ostrengthen{\E}{\iP}{\Salias{\iP'}}
   &\to \Salias{\iP'}\\
-  % \Ostrengthen{\E}{l}{\iP}{(\Swith{\iM}{\iC})}
+  % \Ostrengthen{\E}{\iP}{(\Swith{\iM}{\iC})}
   % &\to \Swith{(\Ostrengthen{\E}{l,\operatorname{id}(\iC)}{\iP}{\iM})}{\iC}\\
-  % &\to \Ostrengthen{\E}{l}{\iP}{\Oenrich{\iC}{\iM}} \\
-  \Ostrengthen{\E}{l}{\iP}{(\Sfunctor{\ix}{\iM}{\iM'})}
-  &\to \Sfunctor{\ix}{\iM}{\Sstrengthen{l}{\iP(X)}{\iM'}}\\
-  % \Ostrengthen{\E}{l}{\iP}{\Stransp{\iM}{\iM'}}
-  % &\to \Stransp{\Ostrengthen{\E}{l}{\iP}{\iM}}{\iM'}\\
-  \Ostrengthen{\E}{l}{\iP}{\Ssig{\ix}{\iS}}
-  &\to \Ssig{\ix}{\Ostrengthen{\E}{l}{\iP}{\iS}}\\[4mm]
+  % &\to \Ostrengthen{\E}{\iP}{\Oenrich{\iC}{\iM}} \\
+  \Ostrengthen{\E}{\iP}{(\Sfunctor{\ix}{\iM}{\iM'})}
+  &\to \Sfunctor{\ix}{\iM}{\Sstrengthen{\iP(X)}{\iM'}}\\
+  % \Ostrengthen{\E}{\iP}{\Stransp{\iM}{\iM'}}
+  % &\to \Stransp{\Ostrengthen{\E}{\iP}{\iM}}{\iM'}\\
+  \Ostrengthen{\E}{\iP}{\Ssig{\ix}{\iS}}
+  &\to \Ssig{\ix}{\Ostrengthen{\E}{\iP}{\iS}}\\[4mm]
   %
-  \Ostrengthen{\E}{l}{\iP}{\Stype{t}{\tau};\iS}
-  &\to \Stype{t}{\iP.t};\Ostrengthen{\E}{l}{\iP}{\iS} % &\text{when } t\notin l
+  \Ostrengthen{\E}{\iP}{\Stype{t}{\tau};\iS}
+  &\to \Stype{t}{\iP.t};\Ostrengthen{\E}{\iP}{\iS} % &\text{when } t\notin l
   \\
-  % \Ostrengthen{\E}{l}{\iP}{\Stype{t}{\tau};\iS}
-  % &\to \Stype{t}{\tau};(\Ostrengthen{\E}{l}{\iP}{\iS}) &\text{when } t\in l\\
-  \Ostrengthen{\E}{l}{\iP}{\Stypeabs{t};\iS}
-  &\to \Stype{t}{\iP.t};\Ostrengthen{\E}{l}{\iP}{\iS} % &\text{when } t\notin l
+  % \Ostrengthen{\E}{\iP}{\Stype{t}{\tau};\iS}
+  % &\to \Stype{t}{\tau};(\Ostrengthen{\E}{\iP}{\iS}) &\text{when } t\in l\\
+  \Ostrengthen{\E}{\iP}{\Stypeabs{t};\iS}
+  &\to \Stype{t}{\iP.t};\Ostrengthen{\E}{\iP}{\iS} % &\text{when } t\notin l
   \\
-  % \Ostrengthen{\E}{l}{\iP}{\Stypeabs{t};\iS}
-  % &\to \Stypeabs{t};(\Ostrengthen{\E}{l}{\iP}{\iS}) &\text{when } t\in l\\
-  % \Ostrengthen{\E}{l}{\iP}{\Smodulety{\ix}{\iM};\iS}
+  % \Ostrengthen{\E}{\iP}{\Stypeabs{t};\iS}
+  % &\to \Stypeabs{t};(\Ostrengthen{\E}{\iP}{\iS}) &\text{when } t\in l\\
+  % \Ostrengthen{\E}{\iP}{\Smodulety{\ix}{\iM};\iS}
   % &\to \Smodulety{\ix}{\Ostrengthen{\E}{\operatorname{chop}(l,\ix)}{\iP.\ix}{\iM}};
-  %   (\Ostrengthen{\E}{l}{\iP}{\iS}) &\text{when } \ix\notin l\\
-  \Ostrengthen{\E}{l}{\iP}{\Smodulety{\ix}{\iM};\iS}
+  %   (\Ostrengthen{\E}{\iP}{\iS}) &\text{when } \ix\notin l\\
+  \Ostrengthen{\E}{\iP}{\Smodulety{\ix}{\iM};\iS}
   &\to \Smodulety{\ix}{\Salias{\iP.\ix}};
-    \Ostrengthen{\E}{l}{\iP}{\iS} % &\text{when } \ix\notin l
+    \Ostrengthen{\E}{\iP}{\iS} % &\text{when } \ix\notin l
   \\
-  % \Ostrengthen{\E}{l}{\iP}{\Smodulety{\ix}{\iM};\iS}
+  % \Ostrengthen{\E}{\iP}{\Smodulety{\ix}{\iM};\iS}
   % &\to \Smodulety{\ix}{\iM};
-  %   (\Ostrengthen{\E}{l}{\iP}{\iS})  &\text{when } \ix\in l\\
-  \Ostrengthen{\E}{l}{\iP}{\Smoduletype{\iX}{\iM};\iS}
+  %   (\Ostrengthen{\E}{\iP}{\iS})  &\text{when } \ix\in l\\
+  \Ostrengthen{\E}{\iP}{\Smoduletype{\iX}{\iM};\iS}
   &\to \Smoduletype{\iX}{\iM};
-    \Ostrengthen{\E}{l}{\iP}{\iS} \\[4mm]
+    \Ostrengthen{\E}{\iP}{\iS} \\[4mm]
   %
-  \Ostrengthen{\E}{l'}{\iP'}{\Sstrengthen{l}{\iP}{\iM}}
-  &\to \Ostrengthen{\E}{l}{\iP}{\iM}\\
-  \Ostrengthen{\E}{l}{\iP}{\Senrich{\iC}{\iM}}
-  &\to \Ostrengthen{\E}{l}{\iP}{\Oenrich{\E}{\iC}{\iM}}\\
+  \Ostrengthen{\E}{\iP'}{\Sstrengthen{\iP}{\iM}}
+  &\to \Ostrengthen{\E}{\iP}{\iM}\\
+  \Ostrengthen{\E}{\iP}{\Senrich{\iC}{\iM}}
+  &\to \Ostrengthen{\E}{\iP}{\Oenrich{\E}{\iC}{\iM}}\\
 \end{align*}\vspace{-3mm}
 
 %%% Local Variables:

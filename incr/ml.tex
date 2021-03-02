@@ -1,0 +1,153 @@
+\section{An ML module calculus}
+
+We now introduce our module calculus.
+First, let us defined some conventions:
+lowercase meta-variables such as $x$, $e$ or $t$ are used for the core language;
+capitalized meta-variables such as $\ix$, $\im$, $\is$ represent modules;
+calligraphic meta-variables such as $\iX$, $\iM$, $\iS$ represent module types.
+
+\subsection{Syntax}
+
+The syntax is defined in \cref{grammar}.
+The module expression language contains paths $\ip$, which might
+be variables $\ix$ or qualified accesses $\ip.\ix$,
+parameterized modules i.e.~\emph{functors} ($\Sfunctor{\ix}{\iM}{\im}$),
+module type annotations i.e.~\emph{ascriptions}, both
+opaque $\Sconstraint{\im}{\iM}$ and transparent $\Stransp{\im}{\iM}$,
+and finally structures $\Sstruct{\ix}{\is}$. Structures
+contains a list of declarations, noted $\id$, which can be value, type, module or module type bindings. Structures are also annotated with a ``Self'' variable,
+which represent the object through which
+other field in the module should be accessed.
+
+In our core calculus, module types are stratified. $\iM$ represent module
+types with operations, while $\iMO$ are raw module types without initial operations
+(i.e., in head normal form). Raw module types can be (qualified)
+module type variables $\iX$ or $\iP.\iX$, functor types
+$\Sfunctor{\iX}{\iM_1}{\iM_2}$, signatures $\Ssig{\ix}{\iS}$,
+and singletons $\Salias{\iP}$.
+As with structures, signatures are a list of declarations noted $\iD$, and
+a ``Self'' variable. Operations are described in the subsequent section.
+
+The core language is left largely undefined in our calculus, except for qualified
+accesses.
+
+$\subst{\ix}{\iy}{\iM}$ denotes the substitution of variable $\ix$ by variable $\iy$ in $\iM$. We only substitute variables by other variables.
+
+\begin{figure}[!hb]
+  \input{theory/grammar}
+  \caption{Module language}
+  \label{grammar}
+\end{figure}
+
+
+\subsection{Notations}
+
+Judgements:\\
+\begin{description}[align=right, leftmargin=3.5cm]
+\item[$\wtm{\E}{\im}{\iM}$ :]
+  The module $\im$ is of type $\iM$ in $\E$.
+  See \cref{module:typing}.
+\item[$\submod{\E}{\iM}{\iM'}{\iM_r}$ :]
+  The module type $\iM$ is a subtype of $\iM'$ in $\E$.
+  See \cref{module:subtyping}.
+\item[$\Oreduce{\E}{\iM} = \iMO$ :]
+  The module type with operations $\iM$ can be reduced to a module
+  type without operations $\iMO$.
+  See \cref{module:strengthen,module:enrich,module:subst}.
+  \TODO{Change bracket style ...}
+\end{description}
+
+Operations:\\
+\begin{tabular}{ll}
+  $\Sstrengthen{\iP}{\iM}$
+  & Strenghten $\iM$ by $\iP$ while ignoring the list of module paths $l$.\\
+  $\Senrich{\iC}{\iM}$
+  & Enrich the module $\iM$ with the constraints $\iC$.\\
+  $\Ssubst{\iX : \iM}{\iM'}$
+  & Substitutes $\iX$ by $\iM$ in $\iM'$.
+\end{tabular}\\
+
+Environment accesses:\\
+\begin{tabular}{ll}
+  $\lookup{\E}{\ip}$
+  & Lookup the module or module type $\ip$ in the environment (i.e., the signature)
+    $\E$.\\
+  $\resolve{\E}{\iMO}$
+  & Resolve $\iMO$ until it's not a path (i.e., either an arrow or a signature).\\
+  $\Onormalize{\E}{\iP}$
+  & Normalizes the path $\iP$ in $\E$
+\end{tabular}
+
+\begin{figure}[tbp]
+  \mprset{sep=1.5em}
+  \input{theory/typing}\vspace{-3mm}
+  \caption{Module typing rules -- $\wtm{\E}{\im}{\iM}$}
+  \label{module:typing}
+\end{figure}
+
+\begin{figure}[tbp]
+  \input{theory/subtyping}\vspace{-3mm}
+  \caption{Module subtyping rules -- $\submod{\E}{\iM}{\iM'}{\iM_r}$}
+  \label{module:subtyping}
+\end{figure}
+
+\begin{figure}[tbp]
+  \input{theory/strengthen}
+  \caption{Module strengthening operation -- $\Sstrengthen{\iP}{\iM}$}
+  \label{module:strengthen}
+\end{figure}
+
+\begin{figure}[tbp]
+  \input{theory/enrich}
+  \caption{Enrichment operation -- $\Senrich{\iC}{\iM}$}
+  \label{module:enrich}
+\end{figure}
+
+\begin{figure}[tbp]
+  \input{theory/subst}
+  \caption{Subst operation -- $\Ssubst{\ix : \iM}{\iM'}$}
+  \label{module:subst}
+\end{figure}
+
+\begin{figure}[tbp]
+  \input{theory/lookup}\vspace{-3mm}
+  \caption{Lookup rules -- $\lookup{\E}{\ip} = \iM$}
+  \label{module:lookup}
+% \end{figure}
+
+% \begin{figure}[hbt]
+  \begin{subfigure}[t]{0.5\linewidth}
+    \begin{align*}
+      \Oshape{\E}{\iM} &= \Oshape{\E}{\Oreduce{\E}{\iM}}\\
+      \Oshape{\E}{\Salias{\iP}} &= \Oshape{\E}{\resolve{\E}{\iP}}\\
+      \Oshape{\E}{\Ssig{\ix}{\iS}} &= \Ssig{\ix}{\iS}\\
+      \Oshape{\E}{\Sfunctor{\ix}{\iM}{\iM'}} &= \Sfunctor{\ix}{\iM}{\iM'}
+    \end{align*}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.5\linewidth}
+    \begin{align*}
+      \resolve{\E}{\iP}
+      &= \Sstrengthen{\Onormalize{\E}{\iP}}{\lookup{\E}{\Onormalize{\E}{\iP}}}
+      \\[1em]
+      \Onormalize{\E}{\iP}
+      &=
+        \begin{dcases}
+          \Onormalize{\E}{\iP'} & \text{when } \lookup{\E}{\iP} = \Salias{\iP'} \\
+          \iP & \text{otherwise}
+        \end{dcases}
+    \end{align*}
+  \end{subfigure}
+% \end{figure}
+
+% % \begin{figure}[p]
+%   \input{theory/validity}\vspace{-3mm}
+%   \caption{Module type validity rules -- $\wfm{\Env}{\Mm}$}
+%   \label{module:validity}
+\end{figure}
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main.tex"
+%%% End:
