@@ -1,8 +1,8 @@
 (** Requires the following packages: gg, graphics, tyxml *)
 
-(** How to definition positions? *)
+(** How to definition points? *)
 
-module type POS = sig
+module type POINT = sig
   type t
   val v : float -> float -> t
   val ( + ) : t -> t -> t
@@ -10,7 +10,7 @@ module type POS = sig
   val y : t -> float
 end
 
-module Pos = struct
+module Point = struct
   type t = float * float
   let (+) (x1,y1) (x2,y2) = (x1+.x2,y1+.y2)
   let v x y = (x,y)
@@ -52,7 +52,7 @@ module Graphics = struct
 end
 
 (** The picture API! *)
-module Pic (P : POS) = struct
+module Pic (P : POINT) = struct
   
   type t =
     | Point of P.t
@@ -79,7 +79,7 @@ module Pic (P : POS) = struct
     aux t
 end     
 
-module A = Pic(Pos)
+module A = Pic(Point)
 
 (* Applications on the same modules are compatible! *)
 module B = Pic(Gg.V2)

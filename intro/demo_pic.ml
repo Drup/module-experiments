@@ -1,61 +1,30 @@
-module Pos = struct
-  type t = float * float
-  let (+) (x1,y1) (x2,y2) = (x1+.x2,y1+.y2)
-  let v x y = (x,y)
-  let x = fst
-  let y = snd
-end
+module Pic = struct
 
-module type POS = sig
-  type t
-  val v : float -> float -> t
-  val ( + ) : t -> t -> t
-  val x : t -> float
-  val y : t -> float
-end
-
-module type RENDERER = sig
-  type output
-  type point
-  val point : point -> output
-  val polyline : point list -> output
-  val many : output list -> output
-end
-
-module Pic (P : POS) = struct
+  type point = float * float
+  let point x y = (x,y) 
+  let (++) (x1,y1) (x2,y2) = (x1+.x2,y1+.y2)
   
   type t =
-    | Point of P.t
-    | Polyline of P.t list
+    | Point of point
+    | Polyline of point list
     | Many of t list
 
-  let point p = Point p
-  let polyline l = Polyline l
-  let many l = Many l
-  let (++) a b = many [a;b]
-  
   let square lb size =
-    let r = P.v size 0. and rt = P.v size size and t = P.v 0. size in
-    polyline P.[lb; lb+r; lb+rt; lb+t; lb]
+    let r = point size 0. and rt = point size size and t = point 0. size in
+    Polyline [lb; lb++r; lb++rt; lb++t; lb]
   
-  module type RS = RENDERER with type point := P.t
-
-  let render (type o) (module R : RS with type output = o) t : o =
+  let render t =
+    let open Tyxml.Svg in
     let rec aux = function
-      | Point p -> R.point p
-      | Polyline l -> R.polyline l
-      | Many l -> R.many (List.map aux l)
+      | Point (x, y) ->
+        circle ~a:[a_r (0.1, None); a_cx (x,None); a_cy (y,None)] []
+      | Polyline l ->
+        polyline ~a:[a_points l] []
+      | Many l -> g (List.map aux l)
     in
     aux t
 end     
 
-module A = Pic(Pos)
-module B = Pic(Gg.V2)
-module B2 = Pic(Gg.V2)
-
-let x = B.point (Gg.V2.v 0. 0.)
-let x2 = B2.point  (Gg.V2.v 0. 0.)
-let pic : Pic(Gg.V2).t = B.many [x;x2]
 
 
 
@@ -63,14 +32,12 @@ let pic : Pic(Gg.V2).t = B.many [x;x2]
 
 
 
-
-
-
-
-
-
-
-
+module type RENDERER = sig
+  type output
+  val point : float * float -> output
+  val polyline : (float * float) list -> output
+  val many : output list -> output
+end
 
 
 module Svg = struct
@@ -103,16 +70,12 @@ module type POINT = sig
   type t
   val (+) : t -> t -> t
   val v : number -> number -> t
-  (* val x : t -> number
-   * val y : t -> number *)
 end
 module Coord = struct
   type number = float
   type t = float * float
   let (+) (x1,y1) (x2,y2) = (x1+.x2,y1+.y2)
   let v x y = (x,y)
-  (* let x = fst
-   * let y = snd *)
 end
 
 
