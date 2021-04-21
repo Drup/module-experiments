@@ -259,12 +259,18 @@ module G=Graph(Label)(Edge)
   \structure{Dynamically-sized variant of the Wagner-Fischer algorithm for
     computing distance with addition-deletion-change}
   \begin{itemize}
-    \item{Argument comparison: OCaml typechecker comparison used as a black box}
-    \item{Complexity: $O(\max(\mathrm{|arguments|,|parameters|})^2)$}
-    \item{implemented as a patch on the OCaml compiler:
-      \url{https://github.com/ocaml/ocaml/pull/9331} }
+    \item Argument comparison: OCaml typechecker comparison used as a grey box
+    \item Complexity: $O(\max(\mathrm{|arguments|,|parameters|})^2)$
+    \item Merged in the OCaml compiler!\\
+      See \url{https://github.com/ocaml/ocaml/pull/9331} 
   \end{itemize}
 \end{frame}
+
+
+\begin{frame}[standout]
+  \centering \Huge Does it work in practice?
+\end{frame}
+
 
 
 \begin{frame}[fragile]\frametitle{Unreasonably complicated error}
@@ -318,17 +324,18 @@ do not match these parameters:
 
 \begin{frame}[fragile]\frametitle{Dependent functors?}
 \begin{minted}{ocaml}
-module type f =
-  functor
-    (B:sig type x type y type u=x type v=y end)
-    (Y:sig type yu = Y of B.u end)
-    (Z:sig type zv = Z of B.v end)
+module type f = functor
+    (X:sig type a type b end)
+    (Y:sig type foo = Foo of X.a end)
+    (Z:sig type bar = Bar of X.b end)
    -> sig end
-module F: f =
-  functor
-    (X:sig type x type y end)
-    (Z:sig type zv = Z of X.y end)
+
+module F = functor
+    (X:sig type a type b end)
+    (Z:sig type bar = Bar of X.b end)
    -> struct end
+
+(* Check (F : f) *)
 \end{minted}
 \end{frame}
 
@@ -336,13 +343,13 @@ module F: f =
 \begin{alltt}
 {\bfseries{}\color{red}{}Error}: Signature mismatch:
        Modules do not match:
-         functor {\color{green}{}(X : ...(X))} {\color{red}{}\bfseries{}} {\color{green}{}(Z : ...(Z))} -> ...
+         functor {\color{green}{}(X : $S1)} {\color{red}{}\bfseries{}} {\color{green}{}(Z : $S3)} -> ...
        is not included in
-         functor {\color{green}{}(B : ...(B))} {\color{red}{}\bfseries{}(Y : ...(Y))} {\color{green}{}(Z : ...(Z))} -> ...
-  {\color{green}{}1.} Module types ...(X) and ...(B) match
+         functor {\color{green}{}(B : $T1)} {\color{red}{}\bfseries{}(Y : $T2)} {\color{green}{}(Z : $T3)} -> ...
+  {\color{green}{}1.} Module types $S1 and $T1 match
   {\color{red}{}\bfseries{}2.} An argument appears to be missing with module type
-         ...(Y) = sig type yu = Y of B.u end
-  {\color{green}{}3.} Module types ...(Z) and ...(Z) match
+         $T2 = sig type foo = Foo of X.a end
+  {\color{green}{}3.} Module types $S3 and $T3 match
 \end{alltt}
 \end{frame}
 
@@ -387,11 +394,6 @@ Did you mean Graph(Vertex)(Edge)?
 
 \section{Complex examples}
 
-\begin{frame}[standout]
-  \centering \Huge Does this scale?
-\end{frame}
-
-
 \begin{frame}[fragile] \frametitle{A question of performances?}
   \begin{itemize}
     \item{Quadratic module comparisons}
@@ -422,57 +424,61 @@ do not match these parameters:
 \end{frame}
 
 
-  \begin{frame}[fragile]
-  \begin{minted}{ocaml}
-module M = F
-    (Ft)(Ft)(List)(Ft)(Ft)(Ft)(List)(Ft)(Ft)(List)
-    (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Ft)(Ft)(Arg)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Float)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Ft)(Ft)(Gc)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Map)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Seq)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Queue)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Bigarray)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-    (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
-\end{minted}
-\end{frame}
+%   \begin{frame}[fragile]
+%   \begin{minted}{ocaml}
+% module M = F
+%     (Ft)(Ft)(List)(Ft)(Ft)(Ft)(List)(Ft)(Ft)(List)
+%     (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Ft)(Ft)(Arg)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Float)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Ft)(Ft)(Gc)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Map)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Seq)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Queue)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Bigarray)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+%     (Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)(Ft)
+% \end{minted}
+% \end{frame}
 
-\begin{frame}[fragile]\frametitle{300 ms later}
-\begin{alltt}
-These arguments:
-  {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}List} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}List} {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}List} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-  {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-  {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}Arg} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-  {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-  {\color{red}{}\bfseries{}Float} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-  {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}Gc} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-  {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-  {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}Map} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-  {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}Seq} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-  {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-  {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}Queue} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-  {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-  {\color{red}{}\bfseries{}Bigarray} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-  {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-  {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
-do not match these parameters: \dots(elided)
-\end{alltt}
+% \begin{frame}[fragile]\frametitle{300 ms later}
+% \begin{alltt}
+% These arguments:
+%   {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}List} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}List} {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}List} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+%   {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+%   {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}Arg} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+%   {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+%   {\color{red}{}\bfseries{}Float} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+%   {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}Gc} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+%   {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+%   {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}Map} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+%   {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}Seq} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+%   {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+%   {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{red}{}\bfseries{}Queue} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+%   {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+%   {\color{red}{}\bfseries{}Bigarray} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+%   {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+%   {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft} {\color{green}{}Ft}
+% do not match these parameters: \dots(elided)
+% \end{alltt}
 
-\end{frame}
+% \end{frame}
 
 \begin{frame}\frametitle{Bounty}
   If you have existing code (before the 27 August 2020), with functors with more
   than ten arguments, we are offering a bounty of one drink.%
   \footnote{Mirage-generated code does not count}
+  \pause\vspace{2em}
+  \begin{center}
+    \rotatebox{30}{\color{red}\Huge CLAIMED}
+  \end{center}
 \end{frame}
 
 
@@ -481,21 +487,20 @@ do not match these parameters: \dots(elided)
 \begin{frame}\frametitle{Conclusion and future works}
   \begin{block}{Take-away}
     \begin{itemize}
-      \item Diffing for functor application and inclusion
-      \item non-optimized implementation of the Wagner-Fischer
+      \item Ideas do not have to be complicated, and can come from anywhere!\\
+        $\Rightarrow$ Here, the idea came from DOM-manipulation in Web programming
+      \item It can take a long time to merge stuff in the compiler\dots
   \end{itemize}
 \end{block}
 
-\begin{block}{Future works}
+\begin{block}{Applications: The diffing hammer}
   \begin{itemize}
-
-    \item Signature difference
-      \begin{itemize}
-        \item ground work is already implemented
-        \item The user interface needs to be written.
-      \end{itemize}
-    \item Moving to other structural types (in OCaml: objects, polymorphic variants)
-    \item Tying everything together (tree diffing)
+  \item Diffing for functor application and inclusion with Wagner-Fischer\\
+    {\bf Done!}
+  \item Signature difference (ground work done, UI to be done)
+  \item Sum types\\
+    {\bf Done by Florian, Pull Request incoming}
+  \item Moving to other structural types (in OCaml: objects, polymorphic variants)
   \end{itemize}
 \end{block}
 \end{frame}
@@ -506,3 +511,9 @@ do not match these parameters: \dots(elided)
 
 
 \end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% TeX-command-extra-options: "-shell-escape"
+%%% End:
