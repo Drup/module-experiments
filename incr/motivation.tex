@@ -1,17 +1,152 @@
 \section{Motivations}
 \label{motivations}
 
-TODO: Explain functor aliasing.
+\subsection{The aliasing problem}
 
-TODO: Explain transparent ascriptions, with constraints
+Several advanced module systems allow ``module aliases''. If we consider a
+declaration of the form:
 
-TODO: Explain avoidance problem
+\begin{minted}{ocaml}
+module Alias = Original
+\end{minted}
 
-TODO: Add Examples
+In the usual presentation, {\tt Alias} would have the module type {\tt S},
+which is the expanded module type of {\tt Original}.
+With module aliases, {\tt Alias} is exactly of type \ocaml{(= Original)},
+i.e., a singleton type \cite{XX} that uniquely
+identify it as an alias of {\tt Original}. This works well with the applicative
+behavior of functor used notably by OCaml,
+allowing us to preserve \ocaml{F(Alias) = F(Original)}
+for any applicative functor {\tt F}.
 
-TODO: Motivate incrementality
+Unfortunately, this also leads to subtle issues with functors and subtyping.
+Let us consider the following examples:
+
+\begin{minted}{ocaml}
+module F (X : S) = struct
+  module A = X (* this is not an alias *)
+end
+\end{minted}
+
+What should be the type of \ocaml/F(M).A/? If we keep the singleton type
+\ocaml/A : (= X)/, we would have \ocaml/F(M).A : (= M)/. This would mean that
+\ocaml{F(M).A} is exactly the same module as \ocaml{M}. This
+is however not the case: indeed, when given as argument to the functor,
+\ocaml{M} was restricted, by subtyping, to the signature \ocaml{S}.
+Inside the body of the functor, we only get a restricted view of {\tt M} through
+the lense of {\tt S} and {\tt A} can only present this restricted view.
+In practice, this subtyping is implemented by copy: {\tt X} is a new module
+which only contains the fields of {\tt M} that are visible in {\tt S}.
+If users outside the functor can observe the equality \ocaml/F(M).A = M/,
+they might try to access to fields that were not copied and are thus not
+really present in the module.
+\TODO{Make all this a bit clearer, probably with a schema}
+
+One solution to this problem is \emph{transparent ascriptions}, a type of ascription
+that still hides values, but purposefully ``leaks through'' types and other
+static fields.
+We propose to add transparent ascriptions directly in module paths, allowing
+to use them in module aliases. This gives us an immediate
+solution to the identified unsafety while still preserving all the possible sharing.
+We obtain the following type for the example above:
+
+\begin{minted}{ocaml}
+module F (X : S) : sig
+  module A = (X <: S) (* X viewed through S *)
+end
+\end{minted}
+
+We then have \ocaml/F(M).A = (M <: S)/, which properly exposes the sharing
+between {\tt A} and {\tt M}, but restricts the access to dynamic fields that are not
+present in {\tt S}.
+
+\subsection{The avoidance problem}
+
+TODO: Explain avoidance problem more
+
+\begin{minted}{ocaml}
+module F (X : S) = struct
+  type a = X.t list
+  type b = X.t * int
+end
+\end{minted}
+
+What's the type of:
+\begin{minted}{ocaml}
+module A = F(struct type t = A | B end)
+\end{minted}
+
+The typechecker gives us the following un-helpful answer
+\begin{minted}{ocaml}
+module A : sig type a type b end
+\end{minted}
+
+We propose to use local modules:
+
+\begin{minted}{ocaml}
+module A : let X : ... in sig
+  type a = X.t list
+  type b = X.t * int
+end
+\end{minted}
+
+\subsection{Incrementality in module checking}
+
+Modern practical module systems \cite{Rich calculus, etc} provide
+many additional operators not present in the original formulation.
+For instance in OCaml, ``with constraints'', noted \ocaml{S with type t = int}
+allow to add an additional equality to a module type \ocaml{S}.
+\TODO{Cite other operations}.
+
+This operation are so far only syntactic: they are expanded immediately into
+a complete signature. For instance 
+\begin{minted}{ocaml}
+module type S = sig 
+  val x : string
+  module A : T
+end
+module M : S with type A.t = int
+\end{minted}
+
+is immediately expanded as:
+\begin{minted}{ocaml}
+module M : sig  val x : string  module A : sig type t = int ... end  end
+\end{minted}
+
+This yield a simple semantics, but causes numerous efficiency issues in
+practical systems that support large Ecosystems: indeed, the signature
+of the expanded version can be much larger than the original one.
+Our calculus, on the contrary, only expand when absolutely necessary, and keep
+the simplest form otherwise. This gives a presentation
+similar to explicit substitutions in more traditional type theories, with
+similar problematic and trade-offs: we want to minimize the amount of work,
+while still doing enough to ensure we do not delay errors.
+
+The application of this technique throughout our system lead to a novel
+presentation of parsimonious subtyping that only pushes ascriptions up
+to aliases, but not further, ensuring that we maximize the sharing described
+in the previous section.
+
+
+\subsection{Contributions}
+
+We propose a novel module systems which:
+\begin{itemize}
+\item Uses \emph{syntactic} rules, making it easier to reason about and
+  implement as part of production typechecker with inference and error reporting
+\item Support \emph{rich operations} on modules such as strengthening (\cite{XL}),
+  with constraints, \dots  
+\item Support \emph{transparent ascriptions in path}, which safely and
+  conveniently extend
+  the applicative behavior of functors to a context with singletons.
+\item Computes types and subtyping \emph{parsimoniously},
+  using an approach based on explicit substitutions and input/output judgements.
+\end{itemize}
+
+
 
 %%% Local Variables:
 %%% mode: latex
-%%% TeX-master: t
+%%% TeX-command-extra-options: "-shell-escape"
+%%% TeX-master: "main.tex"
 %%% End:

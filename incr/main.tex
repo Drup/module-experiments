@@ -32,7 +32,8 @@
 \newtheorem{corollary}{Corollary}
 \newtheorem{definition}{Definition}
 
-\usepackage{listings}
+\usepackage{minted}
+\newmintinline[ocaml]{ocaml}{}
 \usepackage[scaled=0.85]{DejaVuSansMono}
 
 \usepackage{caption}
@@ -89,5 +90,6 @@
 
 %%% Local Variables:
 %%% mode: latex
+%%% TeX-command-extra-options: "-shell-escape"
 %%% TeX-master: t
 %%% End:
