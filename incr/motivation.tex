@@ -52,12 +52,21 @@ We obtain the following type for the example above:
 
 \begin{minted}{ocaml}
 module F (X : S) : sig
-  module A = (X <: S) (* X viewed through S *)
+  module A = X (* This is a real alias *)
 end
 \end{minted}
+However, once we apply \mintinline{ocaml}{F}, we obtain:
 
-We then have \ocaml/F(M).A = (M <: S)/, which properly exposes the sharing
-between {\tt A} and {\tt M}, but restricts the access to dynamic fields that are not
+\begin{minted}{ocaml}
+module Res = F(M)
+> Module Res : sig
+>   module A = (M <: S) (* X viewed through S *)
+> end
+\end{minted}
+
+Since we now have \ocaml/F(M).A = (M <: S)/, the sharing
+between {\tt A} and {\tt M} is properly exposed,
+but it still restricts the access to dynamic fields that are not
 present in {\tt S}.
 
 \subsection{The avoidance problem}

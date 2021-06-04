@@ -49,9 +49,7 @@
     {\Salias{\iP'}} }
   \and
   \inferrule
-  { \eqpath{\E}{\iP}{\iP'} \\
-    \submod{\E}{\iM''}{\iM'}{\_}
-  }
+  { \eqpath{\E}{\iP}{\iP'} }
   { \submod{\E}
     {\Salias{\iP}}{\Salias{\Stransp{\iP'}{\iM'}}}
     {\Salias{\Stransp{\iP'}{\iM'}}} }
@@ -61,7 +59,7 @@
   { \submod{\E}{\Salias{\iP}}{\Salias{\iP'}}{\Salias{\iP'}} }
   \and
   \inferrule
-  { % \submod{\E}{\resolve{\E}{\iP}}{\iMO}{\iM}
+  { \submod{\E}{\resolve{\E}{\iP}}{\iMO}{\_}
   }
   { \submod{\E}{\Salias{\iP}}{\iMO}{\Salias{\Stransp{\iP}{\iMO}}} }
   \and
